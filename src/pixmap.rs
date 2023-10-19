@@ -10,6 +10,8 @@ use alloc::vec::Vec;
 use core::convert::TryFrom;
 use core::num::NonZeroUsize;
 
+use rayon_macro::parallel;
+
 use tiny_skia_path::IntSize;
 
 use crate::{Color, IntRect};
@@ -216,9 +218,9 @@ impl Pixmap {
     /// Fills the entire pixmap with a specified color.
     pub fn fill(&mut self, color: Color) {
         let c = color.premultiply().to_color_u8();
-        for p in self.as_mut().pixels_mut() {
+        parallel!(for p in self.as_mut().pixels_mut() {
             *p = c;
-        }
+        });
     }
 
     /// Returns the internal data.
@@ -503,9 +505,9 @@ impl<'a> PixmapMut<'a> {
     /// Fills the entire pixmap with a specified color.
     pub fn fill(&mut self, color: Color) {
         let c = color.premultiply().to_color_u8();
-        for p in self.pixels_mut() {
+        parallel!(for p in self.pixels_mut() {
             *p = c;
-        }
+        });
     }
 
     /// Returns the mutable internal data.
