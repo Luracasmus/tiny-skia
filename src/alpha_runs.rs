@@ -25,7 +25,7 @@ pub struct AlphaRuns {
 
 impl AlphaRuns {
     pub fn new(width: LengthU32) -> Self {
-        let mut runs = AlphaRuns {
+        let mut runs = Self {
             runs: vec![None; (width.get() + 1) as usize],
             alpha: vec![0; (width.get() + 1) as usize],
         };

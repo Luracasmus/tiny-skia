@@ -44,7 +44,7 @@ pub struct EdgeClipper {
 
 impl EdgeClipper {
     fn new(clip: Rect, can_cull_to_the_right: bool) -> Self {
-        EdgeClipper {
+        Self {
             clip,
             can_cull_to_the_right,
             edges: ArrayVec::new(),
@@ -323,7 +323,7 @@ pub struct EdgeClipperIter<'a> {
 }
 
 impl<'a> EdgeClipperIter<'a> {
-    pub fn new(path: &'a Path, clip: Rect, can_cull_to_the_right: bool) -> Self {
+    pub const fn new(path: &'a Path, clip: Rect, can_cull_to_the_right: bool) -> Self {
         EdgeClipperIter {
             edge_iter: edge_iter(path),
             clip,

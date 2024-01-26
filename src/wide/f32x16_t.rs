@@ -72,7 +72,7 @@ impl f32x16 {
         roundtrip
             - roundtrip
                 .cmp_gt(self)
-                .blend(f32x16::splat(1.0), f32x16::splat(0.0))
+                .blend(Self::splat(1.0), Self::splat(0.0))
     }
 
     pub fn sqrt(&self) -> Self {
@@ -113,7 +113,7 @@ impl f32x16 {
     }
 }
 
-impl core::ops::Add<f32x16> for f32x16 {
+impl core::ops::Add<Self> for f32x16 {
     type Output = Self;
 
     fn add(self, rhs: Self) -> Self::Output {
@@ -121,7 +121,7 @@ impl core::ops::Add<f32x16> for f32x16 {
     }
 }
 
-impl core::ops::Sub<f32x16> for f32x16 {
+impl core::ops::Sub<Self> for f32x16 {
     type Output = Self;
 
     fn sub(self, rhs: Self) -> Self::Output {
@@ -129,7 +129,7 @@ impl core::ops::Sub<f32x16> for f32x16 {
     }
 }
 
-impl core::ops::Mul<f32x16> for f32x16 {
+impl core::ops::Mul<Self> for f32x16 {
     type Output = Self;
 
     fn mul(self, rhs: Self) -> Self::Output {

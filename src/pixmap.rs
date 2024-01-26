@@ -41,7 +41,7 @@ impl Pixmap {
     ///
     /// Zero size in an error.
     ///
-    /// Pixmap's width is limited by i32::MAX/4.
+    /// Pixmap's width is limited by `i32::MAX/4`.
     pub fn new(width: u32, height: u32) -> Option<Self> {
         let size = IntSize::from_wh(width, height)?;
         let data_len = data_len_for_size(size)?;
@@ -49,7 +49,7 @@ impl Pixmap {
         // We cannot check that allocation was successful yet.
         // We have to wait for https://github.com/rust-lang/rust/issues/48043
 
-        Some(Pixmap {
+        Some(Self {
             data: vec![0; data_len],
             size,
         })
@@ -60,14 +60,14 @@ impl Pixmap {
     ///
     /// The size needs to match the data provided.
     ///
-    /// Pixmap's width is limited by i32::MAX/4.
+    /// Pixmap's width is limited by `i32::MAX/4`.
     pub fn from_vec(data: Vec<u8>, size: IntSize) -> Option<Self> {
         let data_len = data_len_for_size(size)?;
         if data.len() != data_len {
             return None;
         }
 
-        Some(Pixmap { data, size })
+        Some(Self { data, size })
     }
 
     /// Decodes a PNG data into a `Pixmap`.
@@ -152,7 +152,7 @@ impl Pixmap {
             pixel[2] = premultiply_u8(pixel[2], a);
         }
 
-        Pixmap::from_vec(img_data, size)
+        Self::from_vec(img_data, size)
             .ok_or_else(|| make_custom_png_error("failed to create a pixmap"))
     }
 
@@ -199,19 +199,19 @@ impl Pixmap {
 
     /// Returns pixmap's width.
     #[inline]
-    pub fn width(&self) -> u32 {
+    pub const fn width(&self) -> u32 {
         self.size.width()
     }
 
     /// Returns pixmap's height.
     #[inline]
-    pub fn height(&self) -> u32 {
+    pub const fn height(&self) -> u32 {
         self.size.height()
     }
 
     /// Returns pixmap's size.
     #[allow(dead_code)]
-    pub(crate) fn size(&self) -> IntSize {
+    pub(crate) const fn size(&self) -> IntSize {
         self.size
     }
 
@@ -242,7 +242,7 @@ impl Pixmap {
     /// Returns `None` when position is out of bounds.
     pub fn pixel(&self, x: u32, y: u32) -> Option<PremultipliedColorU8> {
         let idx = self.width().checked_mul(y)?.checked_add(x)?;
-        self.pixels().get(idx as usize).cloned()
+        self.pixels().get(idx as usize).copied()
     }
 
     /// Returns a mutable slice of pixels.
@@ -265,7 +265,7 @@ impl Pixmap {
     /// Returns a copy of the pixmap that intersects the `rect`.
     ///
     /// Returns `None` when `Pixmap`'s rect doesn't contain `rect`.
-    pub fn clone_rect(&self, rect: IntRect) -> Option<Pixmap> {
+    pub fn clone_rect(&self, rect: IntRect) -> Option<Self> {
         self.as_ref().clone_rect(rect)
     }
 }
@@ -295,7 +295,7 @@ impl<'a> PixmapRef<'a> {
     /// Creates a new `PixmapRef` from bytes.
     ///
     /// The size must be at least `size.width() * size.height() * BYTES_PER_PIXEL`.
-    /// Zero size in an error. Width is limited by i32::MAX/4.
+    /// Zero size in an error. Width is limited by `i32::MAX/4`.
     ///
     /// The `data` is assumed to have premultiplied RGBA pixels (byteorder: RGBA).
     pub fn from_bytes(data: &'a [u8], width: u32, height: u32) -> Option<Self> {
@@ -320,18 +320,18 @@ impl<'a> PixmapRef<'a> {
 
     /// Returns pixmap's width.
     #[inline]
-    pub fn width(&self) -> u32 {
+    pub const fn width(&self) -> u32 {
         self.size.width()
     }
 
     /// Returns pixmap's height.
     #[inline]
-    pub fn height(&self) -> u32 {
+    pub const fn height(&self) -> u32 {
         self.size.height()
     }
 
     /// Returns pixmap's size.
-    pub(crate) fn size(&self) -> IntSize {
+    pub(crate) const fn size(&self) -> IntSize {
         self.size
     }
 
@@ -343,7 +343,7 @@ impl<'a> PixmapRef<'a> {
     /// Returns the internal data.
     ///
     /// Byteorder: RGBA
-    pub fn data(&self) -> &'a [u8] {
+    pub const fn data(&self) -> &'a [u8] {
         self.data
     }
 
@@ -352,7 +352,7 @@ impl<'a> PixmapRef<'a> {
     /// Returns `None` when position is out of bounds.
     pub fn pixel(&self, x: u32, y: u32) -> Option<PremultipliedColorU8> {
         let idx = self.width().checked_mul(y)?.checked_add(x)?;
-        self.pixels().get(idx as usize).cloned()
+        self.pixels().get(idx as usize).copied()
     }
 
     /// Returns a slice of pixels.
@@ -454,7 +454,7 @@ impl<'a> PixmapMut<'a> {
     /// Creates a new `PixmapMut` from bytes.
     ///
     /// The size must be at least `size.width() * size.height() * BYTES_PER_PIXEL`.
-    /// Zero size in an error. Width is limited by i32::MAX/4.
+    /// Zero size in an error. Width is limited by `i32::MAX/4`.
     ///
     /// The `data` is assumed to have premultiplied RGBA pixels (byteorder: RGBA).
     pub fn from_bytes(data: &'a mut [u8], width: u32, height: u32) -> Option<Self> {
@@ -487,18 +487,18 @@ impl<'a> PixmapMut<'a> {
 
     /// Returns pixmap's width.
     #[inline]
-    pub fn width(&self) -> u32 {
+    pub const fn width(&self) -> u32 {
         self.size.width()
     }
 
     /// Returns pixmap's height.
     #[inline]
-    pub fn height(&self) -> u32 {
+    pub const fn height(&self) -> u32 {
         self.size.height()
     }
 
     /// Returns pixmap's size.
-    pub(crate) fn size(&self) -> IntSize {
+    pub(crate) const fn size(&self) -> IntSize {
         self.size
     }
 

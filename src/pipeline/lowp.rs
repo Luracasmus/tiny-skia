@@ -276,7 +276,7 @@ pub fn load_dst_u8_tail(p: &mut Pipeline) {
     // Fill a dummy array with `tail` values. `tail` is always in a 1..STAGE_WIDTH-1 range.
     // This way we can reuse the `load_8888__` method and remove any branches.
     let data = p.pixmap.slice_mask_at_xy(p.dx, p.dy);
-    let mut tmp = [0u8; STAGE_WIDTH];
+    let mut tmp = [0_u8; STAGE_WIDTH];
     tmp[0..p.tail].copy_from_slice(&data[0..p.tail]);
     load_8(&tmp, &mut p.da);
 

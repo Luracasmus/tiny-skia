@@ -27,7 +27,7 @@ struct FixedRect {
 
 impl FixedRect {
     fn from_rect(src: &Rect) -> Self {
-        FixedRect {
+        Self {
             left: fdot16::from_f32(src.left()),
             top: fdot16::from_f32(src.top()),
             right: fdot16::from_f32(src.right()),
@@ -45,9 +45,8 @@ fn alpha_mul(value: AlphaU8, alpha256: i32) -> u8 {
 }
 
 pub fn fill_rect(rect: &Rect, clip: &ScreenIntRect, blitter: &mut dyn Blitter) {
-    let rect = match rect.intersect(&clip.to_rect()) {
-        Some(v) => v,
-        None => return, // everything was clipped out
+    let Some(rect) = rect.intersect(&clip.to_rect()) else { 
+        return // everything was clipped out
     };
 
     let fr = FixedRect::from_rect(&rect);
@@ -62,7 +61,7 @@ fn fill_fixed_rect(rect: &FixedRect, blitter: &mut dyn Blitter) {
         fdot8::from_fdot16(rect.bottom),
         true,
         blitter,
-    )
+    );
 }
 
 fn fill_dot8(l: FDot8, t: FDot8, r: FDot8, b: FDot8, fill_inner: bool, blitter: &mut dyn Blitter) {
@@ -113,16 +112,15 @@ fn fill_dot8(l: FDot8, t: FDot8, r: FDot8, b: FDot8, fill_inner: bool, blitter: 
             let right = r >> 8;
             let width = right - left;
             if fill_inner {
-                if let Some(width) = u32::try_from(width).ok().and_then(LengthU32::new) {
-                    if let (Ok(left), Ok(top)) = (u32::try_from(left), u32::try_from(top)) {
+                u32::try_from(width).ok().and_then(LengthU32::new).map_or_else(
+                    || debug_assert!(false),
+                    |width| if let (Ok(left), Ok(top)) = (u32::try_from(left), u32::try_from(top)) {
                         let rect = ScreenIntRect::from_xywh_safe(left, top, width, height);
                         blitter.blit_rect(&rect);
                     } else {
                         debug_assert!(false);
                     }
-                } else {
-                    debug_assert!(false);
-                }
+                );
             }
 
             if r & 0xFF != 0 {
@@ -144,10 +142,7 @@ fn do_scanline(l: FDot8, top: i32, r: FDot8, alpha: AlphaU8, blitter: &mut dyn B
     debug_assert!(l < r);
 
     let one_len = LENGTH_U32_ONE;
-    let top = match u32::try_from(top) {
-        Ok(n) => n,
-        _ => return,
-    };
+    let Ok(top) = u32::try_from(top) else { return };
 
     if (l >> 8) == ((r - 1) >> 8) {
         // 1x1 pixel
@@ -193,7 +188,7 @@ fn call_hline_blitter(
     const HLINE_STACK_BUFFER: usize = 100;
 
     let mut runs = [None; HLINE_STACK_BUFFER + 1];
-    let mut aa = [0u8; HLINE_STACK_BUFFER];
+    let mut aa = [0_u8; HLINE_STACK_BUFFER];
 
     let mut count = count.get();
     loop {
@@ -209,7 +204,7 @@ fn call_hline_blitter(
             n = HLINE_STACK_BUFFER as u32;
         }
 
-        debug_assert!(n <= u16::MAX as u32);
+        debug_assert!(u16::try_from(n).is_ok());
         runs[0] = NonZeroU16::new(n as u16);
         runs[n as usize] = None;
         if let Some(y) = y {
@@ -238,19 +233,15 @@ fn anti_hair_line_rgn(points: &[Point], clip: Option<&ScreenIntRect>, blitter: &
     let max = 32767.0;
     let fixed_bounds = Rect::from_ltrb(-max, -max, max, max).unwrap();
 
-    let clip_bounds = if let Some(clip) = clip {
-        // We perform integral clipping later on, but we do a scalar clip first
-        // to ensure that our coordinates are expressible in fixed/integers.
-        //
-        // antialiased hairlines can draw up to 1/2 of a pixel outside of
-        // their bounds, so we need to outset the clip before calling the
-        // clipper. To make the numerics safer, we outset by a whole pixel,
-        // since the 1/2 pixel boundary is important to the antihair blitter,
-        // we don't want to risk numerical fate by chopping on that edge.
-        clip.to_rect().outset(1.0, 1.0)
-    } else {
-        None
-    };
+    // We perform integral clipping later on, but we do a scalar clip first
+    // to ensure that our coordinates are expressible in fixed/integers.
+    //
+    // antialiased hairlines can draw up to 1/2 of a pixel outside of
+    // their bounds, so we need to outset the clip before calling the
+    // clipper. To make the numerics safer, we outset by a whole pixel,
+    // since the 1/2 pixel boundary is important to the antihair blitter,
+    // we don't want to risk numerical fate by chopping on that edge.
+    let clip_bounds = clip.and_then(|clip| clip.to_rect().outset(1.0, 1.0));
 
     for i in 0..points.len() - 1 {
         let mut pts = [Point::zero(); 2];
@@ -284,10 +275,7 @@ fn anti_hair_line_rgn(points: &[Point], clip: Option<&ScreenIntRect>, blitter: &
                 fdot6::ceil(right) + 1,
                 fdot6::ceil(bottom) + 1,
             );
-            let ir = match ir {
-                Some(v) => v,
-                None => return,
-            };
+            let Some(ir) = ir else { return };
 
             if clip.to_int_rect().intersect(&ir).is_none() {
                 continue;
@@ -551,10 +539,7 @@ fn do_anti_hairline(
         blitter
     };
 
-    let blitter_kind = match blitter_kind {
-        Some(v) => v,
-        None => return,
-    };
+    let Some(blitter_kind) = blitter_kind else { return };
 
     // A bit ugly, but looks like this is the only way to have stack allocated object trait.
     let mut hline_blitter;
@@ -599,11 +584,11 @@ fn do_anti_hairline(
 }
 
 // returns high-bit set if x == 0x8000
-fn bad_int(x: i32) -> i32 {
+const fn bad_int(x: i32) -> i32 {
     x & -x
 }
 
-fn any_bad_ints(a: i32, b: i32, c: i32, d: i32) -> i32 {
+const fn any_bad_ints(a: i32, b: i32, c: i32, d: i32) -> i32 {
     (bad_int(a) | bad_int(b) | bad_int(c) | bad_int(d)) >> ((core::mem::size_of::<i32>() << 3) - 1)
 }
 
@@ -648,10 +633,7 @@ impl AntiHairBlitter for HLineAntiHairBlitter<'_> {
     }
 
     fn draw_line(&mut self, x: u32, stop_x: u32, mut fy: FDot16, _: FDot16) -> FDot16 {
-        let count = match LengthU32::new(stop_x - x) {
-            Some(n) => n,
-            None => return fy,
-        };
+        let Some(count) = LengthU32::new(stop_x - x) else { return fy };
 
         fy += fdot16::ONE / 2;
         fy = fy.max(0);
@@ -801,7 +783,7 @@ impl AntiHairBlitter for VertishAntiHairBlitter<'_> {
     }
 }
 
-fn i32_to_alpha(a: i32) -> u8 {
+const fn i32_to_alpha(a: i32) -> u8 {
     (a & 0xFF) as u8
 }
 
@@ -818,7 +800,7 @@ impl Blitter for RectClipBlitter<'_> {
         mut antialias: &mut [AlphaU8],
         mut runs: &mut [AlphaRun],
     ) {
-        fn y_in_rect(y: u32, rect: ScreenIntRect) -> bool {
+        const fn y_in_rect(y: u32, rect: ScreenIntRect) -> bool {
             (y - rect.top()) < rect.height()
         }
 
@@ -856,7 +838,7 @@ impl Blitter for RectClipBlitter<'_> {
     }
 
     fn blit_v(&mut self, x: u32, y: u32, height: LengthU32, alpha: AlphaU8) {
-        fn x_in_rect(x: u32, rect: ScreenIntRect) -> bool {
+        const fn x_in_rect(x: u32, rect: ScreenIntRect) -> bool {
             (x - rect.left()) < rect.width()
         }
 

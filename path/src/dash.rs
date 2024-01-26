@@ -67,7 +67,7 @@ impl StrokeDash {
         debug_assert!(first_len >= 0.0);
         debug_assert!(first_index < dash_array.len());
 
-        Some(StrokeDash {
+        Some(Self {
             array: dash_array,
             offset: dash_offset,
             interval_len,
@@ -176,7 +176,7 @@ fn dash_impl(src: &Path, dash: &StrokeDash, res_scale: f32) -> Option<Path> {
     // We also doesn't support the `SpecialLineRec` case.
     // I have no idea what the point in it.
 
-    fn is_even(x: usize) -> bool {
+    const fn is_even(x: usize) -> bool {
         x % 2 == 0
     }
 
@@ -438,16 +438,10 @@ impl ContourMeasure {
             return;
         }
 
-        let (seg_index, mut start_t) = match self.distance_to_segment(start_d) {
-            Some(v) => v,
-            None => return,
-        };
+        let Some((seg_index, mut start_t)) = self.distance_to_segment(start_d) else { return };
         let mut seg = self.segments[seg_index];
 
-        let (stop_seg_index, stop_t) = match self.distance_to_segment(stop_d) {
-            Some(v) => v,
-            None => return,
-        };
+        let Some((stop_seg_index, stop_t)) = self.distance_to_segment(stop_d) else { return };
         let stop_seg = self.segments[stop_seg_index];
 
         debug_assert!(stop_seg_index <= stop_seg_index);
@@ -680,7 +674,7 @@ impl ContourMeasure {
 }
 
 fn find_segment(base: &[Segment], key: f32) -> i32 {
-    let mut lo = 0u32;
+    let mut lo = 0_u32;
     let mut hi = (base.len() - 1) as u32;
 
     while lo < hi {

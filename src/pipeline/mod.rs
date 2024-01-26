@@ -154,7 +154,7 @@ impl<'a> PixmapRef<'a> {
 
 impl<'a> SubPixmapMut<'a> {
     #[inline(always)]
-    pub(crate) fn offset(&self, dx: usize, dy: usize) -> usize {
+    pub(crate) const fn offset(&self, dx: usize, dy: usize) -> usize {
         self.real_width * dy + dx
     }
 
@@ -207,7 +207,7 @@ pub struct AAMaskCtx {
 
 impl AAMaskCtx {
     #[inline(always)]
-    pub fn copy_at_xy(&self, dx: usize, dy: usize, tail: usize) -> [u8; 2] {
+    pub const fn copy_at_xy(&self, dx: usize, dy: usize, tail: usize) -> [u8; 2] {
         let offset = (self.stride as usize * dy + dx) - self.shift;
         // We have only 3 variants, so unroll them.
         match (offset, tail) {
@@ -227,7 +227,7 @@ pub struct MaskCtx<'a> {
 
 impl MaskCtx<'_> {
     #[inline(always)]
-    fn offset(&self, dx: usize, dy: usize) -> usize {
+    const fn offset(&self, dx: usize, dy: usize) -> usize {
         self.real_width as usize * dy + dx
     }
 }
@@ -272,14 +272,14 @@ pub struct GradientColor {
 }
 
 impl GradientColor {
-    pub fn new(r: f32, g: f32, b: f32, a: f32) -> Self {
-        GradientColor { r, g, b, a }
+    pub const fn new(r: f32, g: f32, b: f32, a: f32) -> Self {
+        Self { r, g, b, a }
     }
 }
 
 impl From<Color> for GradientColor {
     fn from(c: Color) -> Self {
-        GradientColor {
+        Self {
             r: c.red(),
             g: c.green(),
             b: c.blue(),
@@ -334,7 +334,7 @@ pub struct RasterPipelineBuilder {
 
 impl RasterPipelineBuilder {
     pub fn new() -> Self {
-        RasterPipelineBuilder {
+        Self {
             stages: ArrayVec::new(),
             force_hq_pipeline: false,
             ctx: Context::default(),

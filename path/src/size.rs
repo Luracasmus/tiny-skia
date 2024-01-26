@@ -24,28 +24,28 @@ pub struct IntSize {
 impl IntSize {
     /// Creates a new `IntSize` from width and height.
     pub fn from_wh(width: u32, height: u32) -> Option<Self> {
-        Some(IntSize {
+        Some(Self {
             width: LengthU32::new(width)?,
             height: LengthU32::new(height)?,
         })
     }
 
-    pub(crate) fn from_wh_safe(width: LengthU32, height: LengthU32) -> Self {
-        IntSize { width, height }
+    pub(crate) const fn from_wh_safe(width: LengthU32, height: LengthU32) -> Self {
+        Self { width, height }
     }
 
     /// Returns width.
-    pub fn width(&self) -> u32 {
+    pub const fn width(&self) -> u32 {
         self.width.get()
     }
 
     /// Returns height.
-    pub fn height(&self) -> u32 {
+    pub const fn height(&self) -> u32 {
         self.height.get()
     }
 
     /// Returns width and height as a tuple.
-    pub fn dimensions(&self) -> (u32, u32) {
+    pub const fn dimensions(&self) -> (u32, u32) {
         (self.width(), self.height())
     }
 
@@ -97,11 +97,11 @@ fn size_scale(s1: IntSize, s2: IntSize, expand: bool) -> IntSize {
         rw >= s2.width()
     };
 
-    if !with_h {
-        IntSize::from_wh(rw, s2.height()).unwrap()
-    } else {
+    if with_h {
         let h = (s2.width() as f32 * s1.height() as f32 / s1.width() as f32).ceil() as u32;
         IntSize::from_wh(s2.width(), h).unwrap()
+    } else {
+        IntSize::from_wh(rw, s2.height()).unwrap()
     }
 }
 
@@ -137,19 +137,19 @@ pub struct Size {
 impl Size {
     /// Creates a new `Size` from width and height.
     pub fn from_wh(width: f32, height: f32) -> Option<Self> {
-        Some(Size {
+        Some(Self {
             width: NonZeroPositiveF32::new(width)?,
             height: NonZeroPositiveF32::new(height)?,
         })
     }
 
     /// Returns width.
-    pub fn width(&self) -> f32 {
+    pub const fn width(&self) -> f32 {
         self.width.get()
     }
 
     /// Returns height.
-    pub fn height(&self) -> f32 {
+    pub const fn height(&self) -> f32 {
         self.height.get()
     }
 
@@ -190,10 +190,10 @@ fn size_scale_f64(s1: Size, s2: Size, expand: bool) -> Size {
     } else {
         rw >= s2.width.get()
     };
-    if !with_h {
-        Size::from_wh(rw, s2.height.get()).unwrap()
-    } else {
+    if with_h {
         let h = s2.width.get() * s1.height.get() / s1.width.get();
         Size::from_wh(s2.width.get(), h).unwrap()
+    } else {
+        Size::from_wh(rw, s2.height.get()).unwrap()
     }
 }

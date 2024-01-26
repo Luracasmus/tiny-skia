@@ -49,7 +49,7 @@ impl Mask {
     /// The size needs to match the data provided.
     pub fn new(width: u32, height: u32) -> Option<Self> {
         let size = IntSize::from_wh(width, height)?;
-        Some(Mask {
+        Some(Self {
             data: vec![0; width as usize * height as usize],
             size,
         })
@@ -58,7 +58,7 @@ impl Mask {
     /// Creates a new mask from a `PixmapRef`.
     pub fn from_pixmap(pixmap: PixmapRef, mask_type: MaskType) -> Self {
         let data_len = pixmap.width() as usize * pixmap.height() as usize;
-        let mut mask = Mask {
+        let mut mask = Self {
             data: vec![0; data_len],
             size: pixmap.size(),
         };
@@ -103,24 +103,24 @@ impl Mask {
             return None;
         }
 
-        Some(Mask { data, size })
+        Some(Self { data, size })
     }
 
     /// Returns mask's width.
     #[inline]
-    pub fn width(&self) -> u32 {
+    pub const fn width(&self) -> u32 {
         self.size.width()
     }
 
     /// Returns mask's height.
     #[inline]
-    pub fn height(&self) -> u32 {
+    pub const fn height(&self) -> u32 {
         self.size.height()
     }
 
     /// Returns mask's size.
     #[allow(dead_code)]
-    pub(crate) fn size(&self) -> IntSize {
+    pub(crate) const fn size(&self) -> IntSize {
         self.size
     }
 
@@ -200,7 +200,7 @@ impl Mask {
         let size = IntSize::from_wh(info.width, info.height)
             .ok_or_else(|| make_custom_png_error("invalid image size"))?;
 
-        Mask::from_vec(img_data, size)
+        Self::from_vec(img_data, size)
             .ok_or_else(|| make_custom_png_error("failed to create a mask"))
     }
 
@@ -288,14 +288,12 @@ impl Mask {
                     };
 
                     let clip_rect = tile.size().to_screen_int_rect(0, 0);
-                    let mut subpix = match self.subpixmap(tile.to_int_rect()) {
-                        Some(v) => v,
-                        None => continue, // technically unreachable
+                    let Some(mut subpix) = self.subpixmap(tile.to_int_rect()) else {
+                        continue // technically unreachable
                     };
 
-                    let mut blitter = match RasterPipelineBlitter::new_mask(&mut subpix) {
-                        Some(v) => v,
-                        None => continue, // nothing to do, all good
+                    let Some(mut blitter) = RasterPipelineBlitter::new_mask(&mut subpix) else {
+                        continue // nothing to do, all good
                     };
 
                     // We're ignoring "errors" here, because `fill_path` will return `None`
@@ -316,9 +314,8 @@ impl Mask {
             } else {
                 let clip_rect = self.size().to_screen_int_rect(0, 0);
                 let mut subpix = self.as_subpixmap();
-                let mut blitter = match RasterPipelineBlitter::new_mask(&mut subpix) {
-                    Some(v) => v,
-                    None => return, // nothing to do, all good
+                let Some(mut blitter) = RasterPipelineBlitter::new_mask(&mut subpix) else {
+                    return // nothing to do, all good
                 };
 
                 if anti_alias {
@@ -328,12 +325,9 @@ impl Mask {
                 }
             }
         } else {
-            let path = match path.clone().transform(transform) {
-                Some(v) => v,
-                None => {
-                    log::warn!("path transformation failed");
-                    return;
-                }
+            let Some(path) = path.clone().transform(transform) else {
+                log::warn!("path transformation failed");
+                return;
             };
 
             self.fill_path(&path, fill_rule, anti_alias, Transform::identity());
@@ -350,7 +344,7 @@ impl Mask {
         anti_alias: bool,
         transform: Transform,
     ) {
-        let mut submask = Mask::new(self.width(), self.height()).unwrap();
+        let mut submask = Self::new(self.width(), self.height()).unwrap();
         submask.fill_path(path, fill_rule, anti_alias, transform);
 
         for (a, b) in self.data.iter_mut().zip(submask.data.iter()) {
@@ -389,7 +383,7 @@ pub struct SubMaskRef<'a> {
 }
 
 impl<'a> SubMaskRef<'a> {
-    pub(crate) fn mask_ctx(&self) -> crate::pipeline::MaskCtx<'a> {
+    pub(crate) const fn mask_ctx(&self) -> crate::pipeline::MaskCtx<'a> {
         crate::pipeline::MaskCtx {
             data: self.data,
             real_width: self.real_width,

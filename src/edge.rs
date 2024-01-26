@@ -24,19 +24,19 @@ pub enum Edge {
 }
 
 impl Edge {
-    pub fn as_line(&self) -> &LineEdge {
+    pub const fn as_line(&self) -> &LineEdge {
         match self {
-            Edge::Line(line) => line,
-            Edge::Quadratic(quad) => &quad.line,
-            Edge::Cubic(cubic) => &cubic.line,
+            Self::Line(line) => line,
+            Self::Quadratic(quad) => &quad.line,
+            Self::Cubic(cubic) => &cubic.line,
         }
     }
 
     pub fn as_line_mut(&mut self) -> &mut LineEdge {
         match self {
-            Edge::Line(line) => line,
-            Edge::Quadratic(quad) => &mut quad.line,
-            Edge::Cubic(cubic) => &mut cubic.line,
+            Self::Line(line) => line,
+            Self::Quadratic(quad) => &mut quad.line,
+            Self::Cubic(cubic) => &mut cubic.line,
         }
     }
 }
@@ -76,13 +76,13 @@ impl LineEdge {
         let mut x1 = (p1.x * scale) as i32;
         let mut y1 = (p1.y * scale) as i32;
 
-        let mut winding = 1;
-
-        if y0 > y1 {
+        let winding = if y0 > y1 {
             core::mem::swap(&mut x0, &mut x1);
             core::mem::swap(&mut y0, &mut y1);
-            winding = -1;
-        }
+            -1
+        } else {
+            1
+        };
 
         let top = fdot6::round(y0);
         let bottom = fdot6::round(y1);
@@ -95,7 +95,7 @@ impl LineEdge {
         let slope = fdot6::div(x1 - x0, y1 - y0);
         let dy = compute_dy(top, y0);
 
-        Some(LineEdge {
+        Some(Self {
             next: None,
             prev: None,
             x: fdot6::to_fdot16(x0 + fdot16::mul(slope, dy)),
@@ -106,7 +106,7 @@ impl LineEdge {
         })
     }
 
-    pub fn is_vertical(&self) -> bool {
+    pub const fn is_vertical(&self) -> bool {
         self.dx == 0
     }
 
@@ -175,12 +175,14 @@ impl QuadraticEdge {
         let mut x2 = (points[2].x * scale) as i32;
         let mut y2 = (points[2].y * scale) as i32;
 
-        let mut winding = 1;
-        if y0 > y2 {
+        let winding = if y0 > y2 {
             core::mem::swap(&mut x0, &mut x2);
             core::mem::swap(&mut y0, &mut y2);
-            winding = -1;
-        }
+            -1
+        } else {
+            1
+        };
+
         debug_assert!(y0 <= y1 && y1 <= y2);
 
         let top = fdot6::round(y0);
@@ -246,7 +248,7 @@ impl QuadraticEdge {
         let q_last_x = fdot6::to_fdot16(x2);
         let q_last_y = fdot6::to_fdot16(y2);
 
-        Some(QuadraticEdge {
+        Some(Self {
             line: LineEdge {
                 next: None,
                 prev: None,
@@ -352,14 +354,15 @@ impl CubicEdge {
         let mut x3 = (points[3].x * scale) as i32;
         let mut y3 = (points[3].y * scale) as i32;
 
-        let mut winding = 1;
-        if sort_y && y0 > y3 {
+        let winding = if sort_y && y0 > y3 {
             core::mem::swap(&mut x0, &mut x3);
             core::mem::swap(&mut x1, &mut x2);
             core::mem::swap(&mut y0, &mut y3);
             core::mem::swap(&mut y1, &mut y2);
-            winding = -1;
-        }
+            -1
+        } else {
+            1
+        };
 
         let top = fdot6::round(y0);
         let bot = fdot6::round(y3);
@@ -420,7 +423,7 @@ impl CubicEdge {
         let c_last_x = fdot6::to_fdot16(x3);
         let c_last_y = fdot6::to_fdot16(y3);
 
-        Some(CubicEdge {
+        Some(Self {
             line: LineEdge {
                 next: None,
                 prev: None,
@@ -498,11 +501,11 @@ impl CubicEdge {
 }
 
 // This correctly favors the lower-pixel when y0 is on a 1/2 pixel boundary
-fn compute_dy(top: FDot6, y0: FDot6) -> FDot6 {
+const fn compute_dy(top: FDot6, y0: FDot6) -> FDot6 {
     left_shift(top, 6) + 32 - y0
 }
 
-fn diff_to_shift(dx: FDot6, dy: FDot6, shift_aa: i32) -> i32 {
+const fn diff_to_shift(dx: FDot6, dy: FDot6, shift_aa: i32) -> i32 {
     // cheap calc of distance from center of p0-p2 to the center of the curve
     let mut dist = cheap_distance(dx, dy);
 
@@ -518,7 +521,7 @@ fn diff_to_shift(dx: FDot6, dy: FDot6, shift_aa: i32) -> i32 {
     (32 - dist.leading_zeros() as i32) >> 1
 }
 
-fn cheap_distance(mut dx: FDot6, mut dy: FDot6) -> FDot6 {
+const fn cheap_distance(mut dx: FDot6, mut dy: FDot6) -> FDot6 {
     dx = dx.abs();
     dy = dy.abs();
     // return max + min/2
@@ -538,7 +541,7 @@ fn cheap_distance(mut dx: FDot6, mut dy: FDot6) -> FDot6 {
 //
 // In the fixed case, we want to turn the fixed into .6 by saying pt >> 10,
 // or pt >> 8 for antialiasing. This is implemented as pt >> (10 - shift).
-fn fdot6_to_fixed_div2(value: FDot6) -> FDot16 {
+const fn fdot6_to_fixed_div2(value: FDot6) -> FDot16 {
     // we want to return SkFDot6ToFixed(value >> 1), but we don't want to throw
     // away data in value, so just perform a modify up-shift
     left_shift(value, 16 - 6 - 1)

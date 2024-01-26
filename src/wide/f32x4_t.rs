@@ -65,8 +65,8 @@ impl f32x4 {
             } else if #[cfg(all(feature = "simd", target_arch = "aarch64", target_feature = "neon"))] {
                 Self(unsafe { vrndmq_f32(self.0) })
             } else {
-                let roundtrip: f32x4 = cast(self.trunc_int().to_f32x4());
-                roundtrip - roundtrip.cmp_gt(self).blend(f32x4::splat(1.0), f32x4::default())
+                let roundtrip: Self = cast(self.trunc_int().to_f32x4());
+                roundtrip - roundtrip.cmp_gt(self).blend(Self::splat(1.0), Self::default())
             }
         }
     }
@@ -78,7 +78,7 @@ impl f32x4 {
             } else if #[cfg(all(feature = "simd", target_arch = "aarch64", target_feature = "neon"))] {
                 Self(unsafe { vabsq_f32(self.0) })
             } else {
-                let non_sign_bits = f32x4::splat(f32::from_bits(i32::MAX as u32));
+                let non_sign_bits = Self::splat(f32::from_bits(i32::MAX as u32));
                 self & non_sign_bits
             }
         }
@@ -268,25 +268,25 @@ impl f32x4 {
             } else {
                 use super::u32x4;
 
-                let to_int = f32x4::splat(1.0 / f32::EPSILON);
+                let to_int = Self::splat(1.0 / f32::EPSILON);
                 let u: u32x4 = cast(self);
                 let e: i32x4 = cast(u.shr::<23>() & u32x4::splat(0xff));
-                let mut y: f32x4;
+                let mut y: Self;
 
                 let no_op_magic = i32x4::splat(0x7f + 23);
-                let no_op_mask: f32x4 = cast(e.cmp_gt(no_op_magic) | e.cmp_eq(no_op_magic));
-                let no_op_val: f32x4 = self;
+                let no_op_mask: Self = cast(e.cmp_gt(no_op_magic) | e.cmp_eq(no_op_magic));
+                let no_op_val: Self = self;
 
                 let zero_magic = i32x4::splat(0x7f - 1);
-                let zero_mask: f32x4 = cast(e.cmp_lt(zero_magic));
-                let zero_val: f32x4 = self * f32x4::splat(0.0);
+                let zero_mask: Self = cast(e.cmp_lt(zero_magic));
+                let zero_val: Self = self * Self::splat(0.0);
 
-                let neg_bit: f32x4 = cast(cast::<u32x4, i32x4>(u).cmp_lt(i32x4::default()));
-                let x: f32x4 = neg_bit.blend(-self, self);
+                let neg_bit: Self = cast(cast::<u32x4, i32x4>(u).cmp_lt(i32x4::default()));
+                let x: Self = neg_bit.blend(-self, self);
                 y = x + to_int - to_int - x;
-                y = y.cmp_gt(f32x4::splat(0.5)).blend(
-                    y + x - f32x4::splat(-1.0),
-                    y.cmp_lt(f32x4::splat(-0.5)).blend(y + x + f32x4::splat(1.0), y + x),
+                y = y.cmp_gt(Self::splat(0.5)).blend(
+                    y + x - Self::splat(-1.0),
+                    y.cmp_lt(Self::splat(-0.5)).blend(y + x + Self::splat(1.0), y + x),
                 );
                 y = neg_bit.blend(-y, y);
 
@@ -442,7 +442,7 @@ impl core::ops::Add for f32x4 {
 }
 
 impl core::ops::AddAssign for f32x4 {
-    fn add_assign(&mut self, rhs: f32x4) {
+    fn add_assign(&mut self, rhs: Self) {
         *self = *self + rhs;
     }
 }
@@ -494,7 +494,7 @@ impl core::ops::Mul for f32x4 {
 }
 
 impl core::ops::MulAssign for f32x4 {
-    fn mul_assign(&mut self, rhs: f32x4) {
+    fn mul_assign(&mut self, rhs: Self) {
         *self = *self * rhs;
     }
 }

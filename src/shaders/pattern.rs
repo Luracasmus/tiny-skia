@@ -50,7 +50,7 @@ pub struct PixmapPaint {
 
 impl Default for PixmapPaint {
     fn default() -> Self {
-        PixmapPaint {
+        Self {
             opacity: 1.0,
             blend_mode: BlendMode::default(),
             quality: FilterQuality::Nearest,
@@ -62,7 +62,7 @@ impl Default for PixmapPaint {
 ///
 /// Essentially a `SkImageShader`.
 ///
-/// Unlike Skia, we do not support FilterQuality::Medium, because it involves
+/// Unlike Skia, we do not support `FilterQuality::Medium`, because it involves
 /// mipmap generation, which adds too much complexity.
 #[derive(Clone, PartialEq, Debug)]
 pub struct Pattern<'a> {
@@ -95,23 +95,20 @@ impl<'a> Pattern<'a> {
     }
 
     pub(crate) fn push_stages(&self, p: &mut RasterPipelineBuilder) -> bool {
-        let ts = match self.transform.invert() {
-            Some(v) => v,
-            None => {
-                log::warn!("failed to invert a pattern transform. Nothing will be rendered");
-                return false;
-            }
+        let Some(ts) = self.transform.invert() else {
+            log::warn!("failed to invert a pattern transform. Nothing will be rendered");
+            return false;
         };
 
         p.push(pipeline::Stage::SeedShader);
 
         p.push_transform(ts);
 
-        let mut quality = self.quality;
-
-        if ts.is_identity() || ts.is_translate() {
-            quality = FilterQuality::Nearest;
-        }
+        let mut quality = if ts.is_identity() || ts.is_translate() {
+            FilterQuality::Nearest
+        } else {
+            self.quality
+        };
 
         if quality == FilterQuality::Bilinear {
             if ts.is_translate() {

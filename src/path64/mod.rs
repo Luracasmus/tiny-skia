@@ -42,6 +42,7 @@ pub trait Scalar64 {
 
 impl Scalar64 for f64 {
     // Works just like SkTPin, returning `max` for NaN/inf
+    #[allow(clippy::manual_clamp)]
     fn bound(self, min: Self, max: Self) -> Self {
         max.min(self).max(min)
     }
@@ -62,15 +63,15 @@ impl Scalar64 for f64 {
     }
 
     fn approximately_zero_or_more(self) -> bool {
-        self > -f64::EPSILON
+        self > -Self::EPSILON
     }
 
     fn approximately_one_or_less(self) -> bool {
-        self < 1.0 + f64::EPSILON
+        self < 1.0 + Self::EPSILON
     }
 
     fn approximately_zero(self) -> bool {
-        self.abs() < f64::EPSILON
+        self.abs() < Self::EPSILON
     }
 
     fn approximately_zero_inverse(self) -> bool {
@@ -86,7 +87,7 @@ impl Scalar64 for f64 {
     }
 
     fn approximately_zero_when_compared_to(self, other: Self) -> bool {
-        self == 0.0 || self.abs() < (other * (f32::EPSILON as f64)).abs()
+        self == 0.0 || self.abs() < (other * (f32::EPSILON as Self)).abs()
     }
 
     // Use this for comparing Ts in the range of 0 to 1. For general numbers (larger and smaller) use
@@ -100,10 +101,10 @@ impl Scalar64 for f64 {
     }
 
     fn almost_dequal_ulps(self, other: Self) -> bool {
-        if self.abs() < SCALAR_MAX as f64 && other.abs() < SCALAR_MAX as f64 {
+        if self.abs() < SCALAR_MAX as f64 && other.abs() < SCALAR_MAX as Self {
             (self as f32).almost_dequal_ulps(other as f32)
         } else {
-            (self - other).abs() / self.abs().max(other.abs()) < (f32::EPSILON * 16.0) as f64
+            (self - other).abs() / self.abs().max(other.abs()) < (f32::EPSILON * 16.0) as Self
         }
     }
 }

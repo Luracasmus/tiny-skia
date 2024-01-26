@@ -23,11 +23,11 @@ pub struct Cubic64 {
 }
 
 impl Cubic64 {
-    pub fn new(points: [Point64; POINT_COUNT]) -> Self {
-        Cubic64 { points }
+    pub const fn new(points: [Point64; POINT_COUNT]) -> Self {
+        Self { points }
     }
 
-    pub fn as_f64_slice(&self) -> [f64; POINT_COUNT * 2] {
+    pub const fn as_f64_slice(&self) -> [f64; POINT_COUNT * 2] {
         [
             self.points[0].x,
             self.points[0].y,

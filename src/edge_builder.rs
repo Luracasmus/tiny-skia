@@ -36,10 +36,10 @@ impl ShiftedIntRect {
             rect.width() << shift,
             rect.height() << shift,
         )?;
-        Some(ShiftedIntRect { shifted, shift })
+        Some(Self { shifted, shift })
     }
 
-    pub fn shifted(&self) -> &ScreenIntRect {
+    pub const fn shifted(&self) -> &ScreenIntRect {
         &self.shifted
     }
 
@@ -61,7 +61,7 @@ pub struct BasicEdgeBuilder {
 
 impl BasicEdgeBuilder {
     pub fn new(clip_shift: i32) -> Self {
-        BasicEdgeBuilder {
+        Self {
             edges: Vec::with_capacity(64), // TODO: stack array + fallback
             clip_shift,
         }
@@ -78,7 +78,7 @@ impl BasicEdgeBuilder {
         // let can_cull_to_the_right = !path.isConvex();
         let can_cull_to_the_right = false; // TODO: this
 
-        let mut builder = BasicEdgeBuilder::new(clip_shift);
+        let mut builder = Self::new(clip_shift);
         if !builder.build(path, clip, can_cull_to_the_right) {
             log::warn!("infinite or NaN segments detected during edges building");
             return None;
@@ -108,14 +108,14 @@ impl BasicEdgeBuilder {
                                 return false;
                             }
 
-                            self.push_line(&[p0, p1])
+                            self.push_line(&[p0, p1]);
                         }
                         PathEdge::QuadTo(p0, p1, p2) => {
                             if !p0.is_finite() || !p1.is_finite() || !p2.is_finite() {
                                 return false;
                             }
 
-                            self.push_quad(&[p0, p1, p2])
+                            self.push_quad(&[p0, p1, p2]);
                         }
                         PathEdge::CubicTo(p0, p1, p2, p3) => {
                             if !p0.is_finite()
@@ -126,7 +126,7 @@ impl BasicEdgeBuilder {
                                 return false;
                             }
 
-                            self.push_cubic(&[p0, p1, p2, p3])
+                            self.push_cubic(&[p0, p1, p2, p3]);
                         }
                     }
                 }
@@ -241,7 +241,7 @@ fn combine_vertical(edge: &LineEdge, last: &mut LineEdge) -> Combine {
     Combine::No
 }
 
-pub fn edge_iter(path: &Path) -> PathEdgeIter {
+pub const fn edge_iter(path: &Path) -> PathEdgeIter {
     PathEdgeIter {
         path,
         verb_index: 0,

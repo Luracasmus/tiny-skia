@@ -66,10 +66,11 @@ pub fn roots_real(a: f64, b: f64, c: f64, s: &mut [f64; 3]) -> usize {
         return 0;
     }
 
-    let mut sqrt_d = 0.0;
-    if p2 > q {
-        sqrt_d = (p2 - q).sqrt();
-    }
+    let sqrt_d = if p2 > q {
+        (p2 - q).sqrt()
+    } else {
+        0.0
+    };
 
     s[0] = sqrt_d - p;
     s[1] = -sqrt_d - p;

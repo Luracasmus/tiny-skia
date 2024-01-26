@@ -16,28 +16,28 @@ pub struct f32x2(pub [f32; 2]);
 
 impl f32x2 {
     /// Creates a new pair.
-    pub fn new(a: f32, b: f32) -> f32x2 {
-        f32x2([a, b])
+    pub const fn new(a: f32, b: f32) -> Self {
+        Self([a, b])
     }
 
     /// Creates a new pair from a single value.
-    pub fn splat(x: f32) -> f32x2 {
-        f32x2([x, x])
+    pub const fn splat(x: f32) -> Self {
+        Self([x, x])
     }
 
     /// Returns an absolute value.
-    pub fn abs(self) -> f32x2 {
-        f32x2([self.x().abs(), self.y().abs()])
+    pub fn abs(self) -> Self {
+        Self([self.x().abs(), self.y().abs()])
     }
 
     /// Returns a minimum value.
-    pub fn min(self, other: f32x2) -> f32x2 {
-        f32x2([pmin(self.x(), other.x()), pmin(self.y(), other.y())])
+    pub fn min(self, other: Self) -> Self {
+        Self([pmin(self.x(), other.x()), pmin(self.y(), other.y())])
     }
 
     /// Returns a maximum value.
-    pub fn max(self, other: f32x2) -> f32x2 {
-        f32x2([pmax(self.x(), other.x()), pmax(self.y(), other.y())])
+    pub fn max(self, other: Self) -> Self {
+        Self([pmax(self.x(), other.x()), pmax(self.y(), other.y())])
     }
 
     /// Returns a maximum of both values.
@@ -46,45 +46,45 @@ impl f32x2 {
     }
 
     /// Returns the first value.
-    pub fn x(&self) -> f32 {
+    pub const fn x(&self) -> f32 {
         self.0[0]
     }
 
     /// Returns the second value.
-    pub fn y(&self) -> f32 {
+    pub const fn y(&self) -> f32 {
         self.0[1]
     }
 }
 
-impl core::ops::Add<f32x2> for f32x2 {
-    type Output = f32x2;
+impl core::ops::Add<Self> for f32x2 {
+    type Output = Self;
 
-    fn add(self, other: f32x2) -> f32x2 {
-        f32x2([self.x() + other.x(), self.y() + other.y()])
+    fn add(self, other: Self) -> Self {
+        Self([self.x() + other.x(), self.y() + other.y()])
     }
 }
 
-impl core::ops::Sub<f32x2> for f32x2 {
-    type Output = f32x2;
+impl core::ops::Sub<Self> for f32x2 {
+    type Output = Self;
 
-    fn sub(self, other: f32x2) -> f32x2 {
-        f32x2([self.x() - other.x(), self.y() - other.y()])
+    fn sub(self, other: Self) -> Self {
+        Self([self.x() - other.x(), self.y() - other.y()])
     }
 }
 
-impl core::ops::Mul<f32x2> for f32x2 {
-    type Output = f32x2;
+impl core::ops::Mul<Self> for f32x2 {
+    type Output = Self;
 
-    fn mul(self, other: f32x2) -> f32x2 {
-        f32x2([self.x() * other.x(), self.y() * other.y()])
+    fn mul(self, other: Self) -> Self {
+        Self([self.x() * other.x(), self.y() * other.y()])
     }
 }
 
-impl core::ops::Div<f32x2> for f32x2 {
-    type Output = f32x2;
+impl core::ops::Div<Self> for f32x2 {
+    type Output = Self;
 
-    fn div(self, other: f32x2) -> f32x2 {
-        f32x2([self.x() / other.x(), self.y() / other.y()])
+    fn div(self, other: Self) -> Self {
+        Self([self.x() / other.x(), self.y() / other.y()])
     }
 }
 

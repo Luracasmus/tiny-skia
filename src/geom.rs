@@ -14,9 +14,9 @@ use crate::LengthU32;
 ///
 /// # Guarantees
 ///
-/// - X and Y are in 0..=i32::MAX range.
-/// - Width and height are in 1..=i32::MAX range.
-/// - x+width and y+height does not overflow.
+/// - `X` and `Y` are in `0..=i32::MAX` range.
+/// - `width` and `height` are in `1..=i32::MAX` range.
+/// - `x+width` and `y+height` do not overflow.
 #[allow(missing_docs)]
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct ScreenIntRect {
@@ -40,7 +40,7 @@ impl ScreenIntRect {
         let width = LengthU32::new(width)?;
         let height = LengthU32::new(height)?;
 
-        Some(ScreenIntRect {
+        Some(Self {
             x,
             y,
             width,
@@ -50,7 +50,7 @@ impl ScreenIntRect {
 
     /// Creates a new `ScreenIntRect`.
     pub const fn from_xywh_safe(x: u32, y: u32, width: LengthU32, height: LengthU32) -> Self {
-        ScreenIntRect {
+        Self {
             x,
             y,
             width,
@@ -59,44 +59,44 @@ impl ScreenIntRect {
     }
 
     /// Returns rect's X position.
-    pub fn x(&self) -> u32 {
+    pub const fn x(&self) -> u32 {
         self.x
     }
 
     /// Returns rect's Y position.
-    pub fn y(&self) -> u32 {
+    pub const fn y(&self) -> u32 {
         self.y
     }
 
     /// Returns rect's width.
-    pub fn width(&self) -> u32 {
+    pub const fn width(&self) -> u32 {
         self.width.get()
     }
 
     /// Returns rect's height.
-    pub fn height(&self) -> u32 {
+    pub const fn height(&self) -> u32 {
         self.height.get()
     }
 
     /// Returns rect's width.
-    pub fn width_safe(&self) -> LengthU32 {
+    pub const fn width_safe(&self) -> LengthU32 {
         self.width
     }
 
     /// Returns rect's left edge.
-    pub fn left(&self) -> u32 {
+    pub const fn left(&self) -> u32 {
         self.x
     }
 
     /// Returns rect's top edge.
-    pub fn top(&self) -> u32 {
+    pub const fn top(&self) -> u32 {
         self.y
     }
 
     /// Returns rect's right edge.
     ///
     /// The right edge is at least 1.
-    pub fn right(&self) -> u32 {
+    pub const fn right(&self) -> u32 {
         // No overflow is guaranteed by constructors.
         self.x + self.width.get()
     }
@@ -104,7 +104,7 @@ impl ScreenIntRect {
     /// Returns rect's bottom edge.
     ///
     /// The bottom edge is at least 1.
-    pub fn bottom(&self) -> u32 {
+    pub const fn bottom(&self) -> u32 {
         // No overflow is guaranteed by constructors.
         self.y + self.height.get()
     }
@@ -115,7 +115,7 @@ impl ScreenIntRect {
     }
 
     /// Checks that the rect is completely includes `other` Rect.
-    pub fn contains(&self, other: &Self) -> bool {
+    pub const fn contains(&self, other: &Self) -> bool {
         self.x <= other.x
             && self.y <= other.y
             && self.right() >= other.right()

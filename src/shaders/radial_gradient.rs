@@ -30,11 +30,11 @@ impl FocalData {
     // known as the edge case where the inside circle touches the outside circle (on the focal
     // point). If we were to solve for t bruteforcely using a quadratic equation, this case
     // implies that the quadratic equation degenerates to a linear equation.
-    fn is_focal_on_circle(&self) -> bool {
+    fn is_focal_on_circle(self) -> bool {
         (1.0 - self.r1).is_nearly_zero()
     }
 
-    fn is_well_behaved(&self) -> bool {
+    fn is_well_behaved(self) -> bool {
         !self.is_focal_on_circle() && self.r1 > 1.0
     }
 }
@@ -102,7 +102,7 @@ impl RadialGradient {
 
             // We can treat this gradient as radial, which is faster. If we got here, we know
             // that endRadius is not equal to 0, so this produces a meaningful gradient
-            Some(Shader::RadialGradient(RadialGradient {
+            Some(Shader::RadialGradient(Self {
                 base: Gradient::new(stops, mode, transform, ts),
                 focal_data: None,
             }))
@@ -127,7 +127,7 @@ impl RadialGradient {
                 ts = ts.post_scale(r1 / (r1 * r1 - 1.0), 1.0 / ((r1 * r1 - 1.0).abs()).sqrt());
             }
 
-            Some(Shader::RadialGradient(RadialGradient {
+            Some(Shader::RadialGradient(Self {
                 base: Gradient::new(stops, mode, transform, ts),
                 focal_data: Some(focal_data),
             }))
@@ -135,11 +135,7 @@ impl RadialGradient {
     }
 
     pub(crate) fn push_stages(&self, p: &mut RasterPipelineBuilder) -> bool {
-        let p0 = if let Some(focal_data) = self.focal_data {
-            1.0 / focal_data.r1
-        } else {
-            1.0
-        };
+        let p0 = self.focal_data.map_or(1.0, |focal_data| 1.0 / focal_data.r1);
 
         p.ctx.two_point_conical_gradient = pipeline::TwoPointConicalGradientCtx {
             mask: u32x8::default(),

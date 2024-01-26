@@ -69,7 +69,7 @@ pub struct Stroke {
 
 impl Default for Stroke {
     fn default() -> Self {
-        Stroke {
+        Self {
             width: 1.0,
             miter_limit: 4.0,
             line_cap: LineCap::default(),
@@ -80,20 +80,15 @@ impl Default for Stroke {
 }
 
 /// Draws at the beginning and end of an open path contour.
-#[derive(Copy, Clone, PartialEq, Debug)]
+#[derive(Copy, Clone, PartialEq, Debug, Default)]
 pub enum LineCap {
     /// No stroke extension.
+    #[default]
     Butt,
     /// Adds circle.
     Round,
     /// Adds square.
     Square,
-}
-
-impl Default for LineCap {
-    fn default() -> Self {
-        LineCap::Butt
-    }
 }
 
 /// Specifies how corners are drawn when a shape is stroked.
@@ -108,9 +103,10 @@ impl Default for LineCap {
 /// The fill path constructed to describe the stroked path respects the join setting but may
 /// not contain the actual join. For instance, a fill path constructed with round joins does
 /// not necessarily include circles at each connected segment.
-#[derive(Copy, Clone, PartialEq, Debug)]
+#[derive(Copy, Clone, PartialEq, Debug, Default)]
 pub enum LineJoin {
     /// Extends to miter limit, then switches to bevel.
+    #[default]
     Miter,
     /// Extends to miter limit, then clips the corner.
     MiterClip,
@@ -118,12 +114,6 @@ pub enum LineJoin {
     Round,
     /// Connects outside edges.
     Bevel,
-}
-
-impl Default for LineJoin {
-    fn default() -> Self {
-        LineJoin::Miter
-    }
 }
 
 const QUAD_RECURSIVE_LIMIT: usize = 3;
@@ -190,7 +180,7 @@ impl Path {
     /// If you plan stroking multiple paths, you can try using [`PathStroker`]
     /// which will preserve temporary allocations required during stroking.
     /// This might improve performance a bit.
-    pub fn stroke(&self, stroke: &Stroke, resolution_scale: f32) -> Option<Path> {
+    pub fn stroke(&self, stroke: &Stroke, resolution_scale: f32) -> Option<Self> {
         PathStroker::new().stroke(self, stroke, resolution_scale)
     }
 }
@@ -236,14 +226,14 @@ pub struct PathStroker {
 
 impl Default for PathStroker {
     fn default() -> Self {
-        PathStroker::new()
+        Self::new()
     }
 }
 
 impl PathStroker {
-    /// Creates a new PathStroker.
+    /// Creates a new [`PathStroker`].
     pub fn new() -> Self {
-        PathStroker {
+        Self {
             radius: 0.0,
             inv_miter_limit: 0.0,
             res_scale: 1.0,
@@ -443,7 +433,7 @@ impl PathStroker {
         }
     }
 
-    fn move_to_pt(&self) -> Point {
+    const fn move_to_pt(&self) -> Point {
         self.first_pt
     }
 
@@ -466,7 +456,7 @@ impl PathStroker {
             return;
         }
 
-        if teeny_line && (self.join_completed || iter.map(|i| i.has_valid_tangent()) == Some(true))
+        if teeny_line && (self.join_completed || iter.map(PathSegmentsIter::has_valid_tangent) == Some(true))
         {
             return;
         }
@@ -604,9 +594,8 @@ impl PathStroker {
         for index in 0..=t_values.len() {
             let next_t = t_values
                 .get(index)
-                .cloned()
-                .map(|n| n.to_normalized())
-                .unwrap_or(NormalizedF32::ONE);
+                .copied()
+                .map_or(NormalizedF32::ONE, NormalizedF32Exclusive::to_normalized);
 
             let mut quad_points = QuadConstruct::default();
             self.init_quad(StrokeType::Outer, last_t, next_t, &mut quad_points);
@@ -631,7 +620,9 @@ impl PathStroker {
     fn cubic_stroke(&mut self, cubic: &[Point; 4], quad_points: &mut QuadConstruct) -> bool {
         if !self.found_tangents {
             let result_type = self.tangents_meet(cubic, quad_points);
-            if result_type != ResultType::Quad {
+            if result_type == ResultType::Quad {
+                self.found_tangents = true;
+            } else {
                 let ok = points_within_dist(
                     quad_points.quad[0],
                     quad_points.quad[2],
@@ -643,8 +634,6 @@ impl PathStroker {
                     self.add_degenerate_line(quad_points);
                     return true;
                 }
-            } else {
-                self.found_tangents = true;
             }
         }
 
@@ -705,14 +694,14 @@ impl PathStroker {
         true
     }
 
-    fn cubic_mid_on_line(&self, cubic: &[Point; 4], quad_points: &mut QuadConstruct) -> bool {
+    fn cubic_mid_on_line(&self, cubic: &[Point; 4], quad_points: &QuadConstruct) -> bool {
         let mut stroke_mid = Point::zero();
         self.cubic_quad_mid(cubic, quad_points, &mut stroke_mid);
         let dist = pt_to_line(stroke_mid, quad_points.quad[0], quad_points.quad[2]);
         dist < self.inv_res_scale_squared
     }
 
-    fn cubic_quad_mid(&self, cubic: &[Point; 4], quad_points: &mut QuadConstruct, mid: &mut Point) {
+    fn cubic_quad_mid(&self, cubic: &[Point; 4], quad_points: &QuadConstruct, mid: &mut Point) {
         let mut cubic_mid_pt = Point::zero();
         self.cubic_perp_ray(cubic, quad_points.mid_t, &mut cubic_mid_pt, mid, None);
     }
@@ -1138,7 +1127,7 @@ impl PathStroker {
         &self,
         stroke: &[Point; 3],
         ray: &[Point; 2],
-        quad_points: &mut QuadConstruct,
+        quad_points: &mut QuadConstruct, // doesn't need mut?
     ) -> ResultType {
         let half = NormalizedF32::new_clamped(0.5);
         let stroke_mid = path_geometry::eval_quad_at(stroke, half);
@@ -1262,7 +1251,7 @@ impl PathStroker {
         buf.finish()
     }
 
-    fn has_only_move_to(&self) -> bool {
+    const fn has_only_move_to(&self) -> bool {
         self.segment_count == 0
     }
 
@@ -1428,14 +1417,16 @@ fn round_joiner(
 
     let mut before = before_unit_normal;
     let mut after = after_unit_normal;
-    let mut dir = PathDirection::CW;
 
-    if !is_clockwise(before, after) {
+    let dir = if is_clockwise(before, after) {
+        PathDirection::CW
+    } else {
         builders.swap();
         before = -before;
         after = -after;
-        dir = PathDirection::CCW;
-    }
+
+        PathDirection::CCW
+    };
 
     let ts = Transform::from_row(radius, 0.0, 0.0, radius, pivot.x, pivot.y);
 
@@ -1826,9 +1817,9 @@ fn degenerate_vector(v: Point) -> bool {
 /// Given quad, see if all there points are in a line.
 /// Return true if the inside point is close to a line connecting the outermost points.
 ///
-/// Find the outermost point by looking for the largest difference in X or Y.
-/// Since the XOR of the indices is 3  (0 ^ 1 ^ 2)
-/// the missing index equals: outer_1 ^ outer_2 ^ 3.
+/// Find the outermost point by looking for the largest difference in `X` or `Y`.
+/// Since the XOR of the indices is `3  (0 ^ 1 ^ 2)`
+/// the missing index equals: `outer_1 ^ outer_2 ^ 3`.
 fn quad_in_line(quad: &[Point; 3]) -> bool {
     let mut pt_max = -1.0;
     let mut outer1 = 0;
@@ -1850,7 +1841,7 @@ fn quad_in_line(quad: &[Point; 3]) -> bool {
     debug_assert!(outer1 < outer2);
 
     let mid = outer1 ^ outer2 ^ 3;
-    const CURVATURE_SLOP: f32 = 0.000005; // this multiplier is pulled out of the air
+    const CURVATURE_SLOP: f32 = 0.000_005; // this multiplier is pulled out of the air
     let line_slop = pt_max * pt_max * CURVATURE_SLOP;
     pt_to_line(quad[mid], quad[outer1], quad[outer2]) <= line_slop
 }
@@ -1993,8 +1984,8 @@ fn check_cubic_linear(
 ///
 /// Return true if the inner points is close to a line connecting the outermost points.
 ///
-/// Find the outermost point by looking for the largest difference in X or Y.
-/// Given the indices of the outermost points, and that outer_1 is greater than outer_2,
+/// Find the outermost point by looking for the largest difference in `X` or `Y`.
+/// Given the indices of the outermost points, and that `outer_1` is greater than `outer_2`,
 /// this table shows the index of the smaller of the remaining points:
 ///
 /// ```text
@@ -2007,11 +1998,11 @@ fn check_cubic_linear(
 ///      3     |  -    -    -    -
 /// ```
 ///
-/// If outer_1 == 0 and outer_2 == 1, the smaller of the remaining indices (2 and 3) is 2.
+/// If `outer_1 == 0` and `outer_2 == 1`, the smaller of the remaining indices (`2` and `3`) is `2`.
 ///
-/// This table can be collapsed to: (1 + (2 >> outer_2)) >> outer_1
+/// This table can be collapsed to: `(1 + (2 >> outer_2)) >> outer_1`
 ///
-/// Given three indices (outer_1 outer_2 mid_1) from 0..3, the remaining index is:
+/// Given three indices `(outer_1 outer_2 mid_1)` from `0..3`, the remaining index is:
 ///
 /// ```text
 /// mid_2 == (outer_1 ^ outer_2 ^ mid_1)
@@ -2053,12 +2044,12 @@ mod tests {
     use super::*;
 
     impl PathSegment {
-        fn new_move_to(x: f32, y: f32) -> Self {
-            PathSegment::MoveTo(Point::from_xy(x, y))
+        const fn new_move_to(x: f32, y: f32) -> Self {
+            Self::MoveTo(Point::from_xy(x, y))
         }
 
-        fn new_line_to(x: f32, y: f32) -> Self {
-            PathSegment::LineTo(Point::from_xy(x, y))
+        const fn new_line_to(x: f32, y: f32) -> Self {
+            Self::LineTo(Point::from_xy(x, y))
         }
 
         // fn new_quad_to(x1: f32, y1: f32, x: f32, y: f32) -> Self {
@@ -2069,8 +2060,8 @@ mod tests {
         //     PathSegment::CubicTo(Point::from_xy(x1, y1), Point::from_xy(x2, y2), Point::from_xy(x, y))
         // }
 
-        fn new_close() -> Self {
-            PathSegment::Close
+        const fn new_close() -> Self {
+            Self::Close
         }
     }
 
@@ -2091,16 +2082,16 @@ mod tests {
         let mut iter = stroke_path.segments();
         iter.set_auto_close(true);
 
-        assert_eq!(iter.next().unwrap(), PathSegment::new_move_to(10.485071, 9.878732));
-        assert_eq!(iter.next().unwrap(), PathSegment::new_line_to(20.485071, 49.878731));
+        assert_eq!(iter.next().unwrap(), PathSegment::new_move_to(10.485_071, 9.878732));
+        assert_eq!(iter.next().unwrap(), PathSegment::new_line_to(20.485_071, 49.878731));
         assert_eq!(iter.next().unwrap(), PathSegment::new_line_to(20.0, 50.0));
-        assert_eq!(iter.next().unwrap(), PathSegment::new_line_to(19.514929, 49.878731));
-        assert_eq!(iter.next().unwrap(), PathSegment::new_line_to(29.514929, 9.878732));
+        assert_eq!(iter.next().unwrap(), PathSegment::new_line_to(19.514_929, 49.878731));
+        assert_eq!(iter.next().unwrap(), PathSegment::new_line_to(29.514_929, 9.878732));
         assert_eq!(iter.next().unwrap(), PathSegment::new_line_to(30.0, 10.0));
         assert_eq!(iter.next().unwrap(), PathSegment::new_line_to(30.0, 10.5));
         assert_eq!(iter.next().unwrap(), PathSegment::new_line_to(10.0, 10.5));
         assert_eq!(iter.next().unwrap(), PathSegment::new_line_to(10.0, 10.0));
-        assert_eq!(iter.next().unwrap(), PathSegment::new_line_to(10.485071, 9.878732));
+        assert_eq!(iter.next().unwrap(), PathSegment::new_line_to(10.485_071, 9.878732));
         assert_eq!(iter.next().unwrap(), PathSegment::new_close());
         assert_eq!(iter.next().unwrap(), PathSegment::new_move_to(9.3596115, 9.5));
         assert_eq!(iter.next().unwrap(), PathSegment::new_line_to(30.640388, 9.5));
@@ -2123,8 +2114,10 @@ mod tests {
         );
         let path = pb.finish().unwrap();
 
-        let mut stroke = Stroke::default();
-        stroke.width = 0.394537568;
+        let stroke = Stroke {
+            width: 0.394537568,
+            ..Default::default()
+        };
 
         assert!(PathStroker::new().stroke(&path, &stroke, 1.0).is_none());
     }
@@ -2141,8 +2134,10 @@ mod tests {
         );
         let path = pb.finish().unwrap();
 
-        let mut stroke = Stroke::default();
-        stroke.width = 0.394537568;
+        let stroke = Stroke {
+            width: 0.394537568,
+            ..Default::default()
+        };
 
         assert!(PathStroker::new().stroke(&path, &stroke, 1.0).is_some());
     }
@@ -2162,8 +2157,10 @@ mod tests {
         pb.close();
         let path = pb.finish().unwrap();
 
-        let mut stroke = Stroke::default();
-        stroke.width = 1.49679073e+10;
+        let stroke = Stroke {
+            width: 1.49679073e+10,
+            ..Default::default()
+        };
 
         assert!(PathStroker::new().stroke(&path, &stroke, 1.0).is_some());
     }
@@ -2179,8 +2176,10 @@ mod tests {
         );
         let path = pb.finish().unwrap();
 
-        let mut stroke = Stroke::default();
-        stroke.width = 164.683548;
+        let stroke = Stroke {
+            width: 164.683548,
+            ..Default::default()
+        };
 
         assert!(PathStroker::new().stroke(&path, &stroke, 1.0).is_some());
     }
@@ -2197,8 +2196,10 @@ mod tests {
         );
         let path = pb.finish().unwrap();
 
-        let mut stroke = Stroke::default();
-        stroke.width = 42.835968;
+        let stroke = Stroke {
+            width: 42.835968,
+            ..Default::default()
+        };
 
         assert!(PathStroker::new().stroke(&path, &stroke, 1.0).is_some());
     }

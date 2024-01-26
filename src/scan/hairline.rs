@@ -33,14 +33,14 @@ pub fn stroke_path(
     clip: &ScreenIntRect,
     blitter: &mut dyn Blitter,
 ) {
-    super::hairline::stroke_path_impl(path, line_cap, clip, hair_line_rgn, blitter)
+    super::hairline::stroke_path_impl(path, line_cap, clip, hair_line_rgn, blitter);
 }
 
 fn hair_line_rgn(points: &[Point], clip: Option<&ScreenIntRect>, blitter: &mut dyn Blitter) {
     let max = 32767.0;
     let fixed_bounds = Rect::from_ltrb(-max, -max, max, max).unwrap();
 
-    let clip_bounds = clip.map(|c| c.to_rect());
+    let clip_bounds = clip.map(ScreenIntRect::to_rect);
 
     for i in 0..points.len() - 1 {
         let mut pts = [Point::zero(); 2];
@@ -97,11 +97,7 @@ fn hair_line_rgn(points: &[Point], clip: Option<&ScreenIntRect>, blitter: &mut d
             // which will lead to panic, because we would be accessing pixels outside
             // the current memory buffer.
             // This is tiny-skia specific issue. Skia handles this part differently.
-            let max_y = if let Some(clip_bounds) = clip_bounds {
-                fdot16::from_f32(clip_bounds.bottom())
-            } else {
-                i32::MAX
-            };
+            let max_y = clip_bounds.map_or(i32::MAX, |clip_bounds| fdot16::from_f32(clip_bounds.bottom()));
 
             debug_assert!(ix0 < ix1);
             loop {
@@ -163,14 +159,10 @@ pub fn stroke_path_impl(
 
     {
         let cap_out = if line_cap == LineCap::Butt { 1.0 } else { 2.0 };
-        let ibounds = match path
+        let Some(ibounds) = path
             .bounds()
             .outset(cap_out, cap_out)
-            .and_then(|r| r.round_out())
-        {
-            Some(v) => v,
-            None => return,
-        };
+            .and_then(|r| r.round_out()) else { return };
         if clip.to_int_rect().intersect(&ibounds).is_none() {
             return;
         }
@@ -348,7 +340,7 @@ fn extend_pts(
 
     if matches!(
         next_verb,
-        Some(PathVerb::Move) | Some(PathVerb::Close) | None
+        Some(PathVerb::Move | PathVerb::Close) | None
     ) {
         let last = points.last().unwrap().clone();
         let mut offset = points.len() - 1;
@@ -406,10 +398,7 @@ fn hair_quad(
             None => return,
         };
 
-        let bounds = match compute_nocheck_quad_bounds(points) {
-            Some(v) => v,
-            None => return,
-        };
+        let Some(bounds) = compute_nocheck_quad_bounds(points) else { return };
         if !geometric_overlap(&outset_clip, &bounds) {
             return; // nothing to do
         } else if geometric_contains(&inset_clip, &bounds) {
@@ -474,7 +463,7 @@ fn hair_quad2(
     }
 
     tmp[lines] = points[2];
-    line_proc(&tmp[0..lines + 1], clip, blitter);
+    line_proc(&tmp[0..=lines], clip, blitter);
 }
 
 fn compute_quad_level(points: &[Point; 3]) -> u8 {
@@ -528,10 +517,7 @@ fn hair_cubic(
             None => return,
         };
 
-        let bounds = match compute_nocheck_cubic_bounds(points) {
-            Some(v) => v,
-            None => return,
-        };
+        let Some(bounds) = compute_nocheck_cubic_bounds(points) else { return };
         if !geometric_overlap(&outset_clip, &bounds) {
             return; // noting to do
         } else if geometric_contains(&inset_clip, &bounds) {
@@ -611,9 +597,9 @@ fn hair_cubic2(
         tmp[i] = Point::from_f32x2(((coeff.a * t + coeff.b) * t + coeff.c) * t + coeff.d);
     }
 
-    if tmp.iter().all(|p| p.is_finite()) {
+    if tmp.iter().all(Point::is_finite) {
         tmp[lines] = points[3];
-        line_proc(&tmp[0..lines + 1], clip, blitter);
+        line_proc(&tmp[0..=lines], clip, blitter);
     } else {
         // else some point(s) are non-finite, so don't draw
     }

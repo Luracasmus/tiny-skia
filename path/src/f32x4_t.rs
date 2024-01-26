@@ -42,7 +42,7 @@ impl core::ops::Add for f32x4 {
 }
 
 impl core::ops::AddAssign for f32x4 {
-    fn add_assign(&mut self, rhs: f32x4) {
+    fn add_assign(&mut self, rhs: Self) {
         *self = *self + rhs;
     }
 }
@@ -74,7 +74,7 @@ impl core::ops::Mul for f32x4 {
 }
 
 impl core::ops::MulAssign for f32x4 {
-    fn mul_assign(&mut self, rhs: f32x4) {
+    fn mul_assign(&mut self, rhs: Self) {
         *self = *self * rhs;
     }
 }

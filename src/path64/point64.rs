@@ -20,26 +20,26 @@ pub struct Point64 {
 }
 
 impl Point64 {
-    pub fn from_xy(x: f64, y: f64) -> Self {
-        Point64 { x, y }
+    pub const fn from_xy(x: f64, y: f64) -> Self {
+        Self { x, y }
     }
 
     pub fn from_point(p: Point) -> Self {
-        Point64 {
+        Self {
             x: f64::from(p.x),
             y: f64::from(p.y),
         }
     }
 
-    pub fn zero() -> Self {
-        Point64 { x: 0.0, y: 0.0 }
+    pub const fn zero() -> Self {
+        Self { x: 0.0, y: 0.0 }
     }
 
-    pub fn to_point(&self) -> Point {
+    pub const fn to_point(&self) -> Point {
         Point::from_xy(self.x as f32, self.y as f32)
     }
 
-    pub fn axis_coord(&self, axis: SearchAxis) -> f64 {
+    pub const fn axis_coord(&self, axis: SearchAxis) -> f64 {
         match axis {
             SearchAxis::X => self.x,
             SearchAxis::Y => self.y,

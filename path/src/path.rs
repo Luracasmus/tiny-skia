@@ -38,7 +38,7 @@ pub enum PathVerb {
 /// - Has a valid, precomputed bounds.
 /// - All points are finite.
 /// - Has at least two segments.
-/// - Each contour starts with a MoveTo.
+/// - Each contour starts with a `MoveTo`.
 /// - No duplicated Move.
 /// - No duplicated Close.
 /// - Zero-length contours are allowed.
@@ -66,7 +66,7 @@ impl Path {
     /// Returns the bounds of the path's points.
     ///
     /// The value is already calculated.
-    pub fn bounds(&self) -> Rect {
+    pub const fn bounds(&self) -> Rect {
         self.bounds
     }
 
@@ -83,11 +83,7 @@ impl Path {
         while let Some(segment) = iter.next() {
             let mut count = 0;
             match segment {
-                PathSegment::MoveTo(p) => {
-                    extremas[0] = p;
-                    count = 1;
-                }
-                PathSegment::LineTo(p) => {
+                PathSegment::MoveTo(p) | PathSegment::LineTo(p) => {
                     extremas[0] = p;
                     count = 1;
                 }
@@ -138,7 +134,7 @@ impl Path {
     }
 
     /// Returns an iterator over path's segments.
-    pub fn segments(&self) -> PathSegmentsIter {
+    pub const fn segments(&self) -> PathSegmentsIter {
         PathSegmentsIter {
             path: self,
             verb_index: 0,
@@ -173,7 +169,7 @@ impl core::fmt::Debug for Path {
                 PathSegment::MoveTo(p) => s.write_fmt(format_args!("M {} {} ", p.x, p.y))?,
                 PathSegment::LineTo(p) => s.write_fmt(format_args!("L {} {} ", p.x, p.y))?,
                 PathSegment::QuadTo(p0, p1) => {
-                    s.write_fmt(format_args!("Q {} {} {} {} ", p0.x, p0.y, p1.x, p1.y))?
+                    s.write_fmt(format_args!("Q {} {} {} {} ", p0.x, p0.y, p1.x, p1.y))?;
                 }
                 PathSegment::CubicTo(p0, p1, p2) => s.write_fmt(format_args!(
                     "C {} {} {} {} {} {} ",
@@ -285,7 +281,7 @@ impl<'a> PathSegmentsIter<'a> {
         let mut iter = self.clone();
         while let Some(segment) = iter.next() {
             match segment {
-                PathSegment::MoveTo(_) => {
+                PathSegment::MoveTo(_) | PathSegment::Close => {
                     return false;
                 }
                 PathSegment::LineTo(p) => {
@@ -309,9 +305,6 @@ impl<'a> PathSegmentsIter<'a> {
 
                     return true;
                 }
-                PathSegment::Close => {
-                    return false;
-                }
             }
         }
 
@@ -325,7 +318,7 @@ impl<'a> PathSegmentsIter<'a> {
 
     /// Returns the next verb.
     pub fn next_verb(&self) -> Option<PathVerb> {
-        self.path.verbs.get(self.verb_index).cloned()
+        self.path.verbs.get(self.verb_index).copied()
     }
 }
 

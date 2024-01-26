@@ -30,7 +30,7 @@ impl GradientStop {
     ///
     /// `position` will be clamped to a 0..=1 range.
     pub fn new(position: f32, color: Color) -> Self {
-        GradientStop {
+        Self {
             position: NormalizedF32::new_clamped(position),
             color,
         }
@@ -76,7 +76,7 @@ impl Gradient {
         let colors_are_opaque = stops.iter().all(|p| p.color.is_opaque());
 
         // Pin the last value to 1.0, and make sure positions are monotonic.
-        let start_index = if dummy_first { 0 } else { 1 };
+        let start_index = usize::from(!dummy_first);
         let mut prev = 0.0;
         let mut has_uniform_stops = true;
         let uniform_step = stops[start_index].position.get() - prev;
@@ -93,7 +93,7 @@ impl Gradient {
             prev = curr;
         }
 
-        Gradient {
+        Self {
             stops,
             tile_mode,
             transform,
@@ -111,14 +111,11 @@ impl Gradient {
     ) -> bool {
         p.push(pipeline::Stage::SeedShader);
 
-        let ts = match self.transform.invert() {
-            Some(v) => v,
-            None => {
-                log::warn!("failed to invert a gradient transform. Nothing will be rendered");
-                return false;
-            }
+        let Some(mut ts) = self.transform.invert() else {
+            log::warn!("failed to invert a gradient transform. Nothing will be rendered");
+            return false;
         };
-        let ts = ts.post_concat(self.points_to_unit);
+        ts = ts.post_concat(self.points_to_unit);
         p.push_transform(ts);
 
         push_stages_pre(p);
@@ -178,17 +175,13 @@ impl Gradient {
             // Remove the dummy stops inserted by Gradient::new
             // because they are naturally handled by the search method.
             let (first_stop, last_stop) = if self.stops.len() > 2 {
-                let first = if self.stops[0].color != self.stops[1].color {
-                    0
-                } else {
-                    1
-                };
+                let first = usize::from(self.stops[0].color == self.stops[1].color);
 
                 let len = self.stops.len();
-                let last = if self.stops[len - 2].color != self.stops[len - 1].color {
-                    len - 1
-                } else {
+                let last = if self.stops[len - 2].color == self.stops[len - 1].color {
                     len - 2
+                } else {
+                    len - 1
                 };
                 (first, last)
             } else {

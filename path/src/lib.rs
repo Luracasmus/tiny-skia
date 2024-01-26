@@ -76,29 +76,29 @@ pub struct Point {
 impl From<(f32, f32)> for Point {
     #[inline]
     fn from(v: (f32, f32)) -> Self {
-        Point { x: v.0, y: v.1 }
+        Self { x: v.0, y: v.1 }
     }
 }
 
 impl Point {
     /// Creates a new `Point`.
-    pub fn from_xy(x: f32, y: f32) -> Self {
-        Point { x, y }
+    pub const fn from_xy(x: f32, y: f32) -> Self {
+        Self { x, y }
     }
 
     /// Creates a new `Point` from `f32x2`.
-    pub fn from_f32x2(r: f32x2) -> Self {
-        Point::from_xy(r.x(), r.y())
+    pub const fn from_f32x2(r: f32x2) -> Self {
+        Self::from_xy(r.x(), r.y())
     }
 
     /// Converts a `Point` into a `f32x2`.
-    pub fn to_f32x2(&self) -> f32x2 {
+    pub const fn to_f32x2(&self) -> f32x2 {
         f32x2::new(self.x, self.y)
     }
 
     /// Creates a point at 0x0 position.
-    pub fn zero() -> Self {
-        Point { x: 0.0, y: 0.0 }
+    pub const fn zero() -> Self {
+        Self { x: 0.0, y: 0.0 }
     }
 
     /// Returns true if x and y are both zero.
@@ -114,12 +114,12 @@ impl Point {
     }
 
     /// Checks that two `Point`s are almost equal.
-    pub(crate) fn almost_equal(&self, other: Point) -> bool {
-        !(*self - other).can_normalize()
+    pub(crate) fn almost_equal(self, other: Self) -> bool {
+        !(self - other).can_normalize()
     }
 
     /// Checks that two `Point`s are almost equal using the specified tolerance.
-    pub(crate) fn equals_within_tolerance(&self, other: Point, tolerance: f32) -> bool {
+    pub(crate) fn equals_within_tolerance(self, other: Self, tolerance: f32) -> bool {
         (self.x - other.x).is_nearly_zero_within_tolerance(tolerance)
             && (self.y - other.y).is_nearly_zero_within_tolerance(tolerance)
     }
@@ -142,7 +142,7 @@ impl Point {
         self.set_length_from(x, y, 1.0)
     }
 
-    pub(crate) fn can_normalize(&self) -> bool {
+    pub(crate) fn can_normalize(self) -> bool {
         self.x.is_finite() && self.y.is_finite() && (self.x != 0.0 || self.y != 0.0)
     }
 
@@ -175,12 +175,12 @@ impl Point {
     }
 
     /// Returns the Euclidean distance from origin.
-    pub fn distance(&self, other: Point) -> f32 {
+    pub fn distance(&self, other: Self) -> f32 {
         (*self - other).length()
     }
 
     /// Returns the dot product of two points.
-    pub fn dot(&self, other: Point) -> f32 {
+    pub fn dot(&self, other: Self) -> f32 {
         self.x * other.x + self.y * other.y
     }
 
@@ -189,18 +189,18 @@ impl Point {
     /// Vector and vec form three-dimensional vectors with z-axis value equal to zero.
     /// The cross product is a three-dimensional vector with x-axis and y-axis values
     /// equal to zero. The cross product z-axis component is returned.
-    pub fn cross(&self, other: Point) -> f32 {
+    pub fn cross(&self, other: Self) -> f32 {
         self.x * other.y - self.y * other.x
     }
 
-    pub(crate) fn distance_to_sqd(&self, pt: Point) -> f32 {
+    pub(crate) fn distance_to_sqd(self, pt: Self) -> f32 {
         let dx = self.x - pt.x;
         let dy = self.y - pt.y;
         dx * dx + dy * dy
     }
 
-    pub(crate) fn length_sqd(&self) -> f32 {
-        self.dot(*self)
+    pub(crate) fn length_sqd(self) -> f32 {
+        self.dot(self)
     }
 
     /// Scales Point in-place by scale.
@@ -209,8 +209,8 @@ impl Point {
         self.y *= scale;
     }
 
-    pub(crate) fn scaled(&self, scale: f32) -> Self {
-        Point::from_xy(self.x * scale, self.y * scale)
+    pub(crate) fn scaled(self, scale: f32) -> Self {
+        Self::from_xy(self.x * scale, self.y * scale)
     }
 
     pub(crate) fn swap_coords(&mut self) {
@@ -257,10 +257,11 @@ fn set_point_length(
         return false;
     }
 
-    let mut mag = 0.0;
-    if orig_length.is_some() {
-        mag = dmag as f32;
-    }
+    let mag = if orig_length.is_some() {
+        dmag as f32
+    } else {
+        0.0
+    };
 
     *pt = Point::from_xy(x, y);
 
@@ -272,10 +273,10 @@ fn set_point_length(
 }
 
 impl core::ops::Neg for Point {
-    type Output = Point;
+    type Output = Self;
 
     fn neg(self) -> Self::Output {
-        Point {
+        Self {
             x: -self.x,
             y: -self.y,
         }
@@ -283,45 +284,45 @@ impl core::ops::Neg for Point {
 }
 
 impl core::ops::Add for Point {
-    type Output = Point;
+    type Output = Self;
 
-    fn add(self, other: Point) -> Self::Output {
-        Point::from_xy(self.x + other.x, self.y + other.y)
+    fn add(self, other: Self) -> Self::Output {
+        Self::from_xy(self.x + other.x, self.y + other.y)
     }
 }
 
 impl core::ops::AddAssign for Point {
-    fn add_assign(&mut self, other: Point) {
+    fn add_assign(&mut self, other: Self) {
         self.x += other.x;
         self.y += other.y;
     }
 }
 
 impl core::ops::Sub for Point {
-    type Output = Point;
+    type Output = Self;
 
-    fn sub(self, other: Point) -> Self::Output {
-        Point::from_xy(self.x - other.x, self.y - other.y)
+    fn sub(self, other: Self) -> Self::Output {
+        Self::from_xy(self.x - other.x, self.y - other.y)
     }
 }
 
 impl core::ops::SubAssign for Point {
-    fn sub_assign(&mut self, other: Point) {
+    fn sub_assign(&mut self, other: Self) {
         self.x -= other.x;
         self.y -= other.y;
     }
 }
 
 impl core::ops::Mul for Point {
-    type Output = Point;
+    type Output = Self;
 
-    fn mul(self, other: Point) -> Self::Output {
-        Point::from_xy(self.x * other.x, self.y * other.y)
+    fn mul(self, other: Self) -> Self::Output {
+        Self::from_xy(self.x * other.x, self.y * other.y)
     }
 }
 
 impl core::ops::MulAssign for Point {
-    fn mul_assign(&mut self, other: Point) {
+    fn mul_assign(&mut self, other: Self) {
         self.x *= other.x;
         self.y *= other.y;
     }

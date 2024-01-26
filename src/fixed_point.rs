@@ -35,15 +35,15 @@ pub mod fdot6 {
         (n * 64.0) as i32
     }
 
-    pub fn floor(n: FDot6) -> FDot6 {
+    pub const fn floor(n: FDot6) -> FDot6 {
         n >> 6
     }
 
-    pub fn ceil(n: FDot6) -> FDot6 {
+    pub const fn ceil(n: FDot6) -> FDot6 {
         (n + 63) >> 6
     }
 
-    pub fn round(n: FDot6) -> FDot6 {
+    pub const fn round(n: FDot6) -> FDot6 {
         (n + 32) >> 6
     }
 
@@ -62,7 +62,7 @@ pub mod fdot6 {
         }
     }
 
-    pub fn can_convert_to_fdot16(n: FDot6) -> bool {
+    pub const fn can_convert_to_fdot16(n: FDot6) -> bool {
         let max_dot6 = i32::MAX >> (16 - 6);
         n.abs() <= max_dot6
     }
@@ -78,7 +78,7 @@ pub mod fdot8 {
 
     // Extracted from SkScan_Antihair.cpp
 
-    pub fn from_fdot16(x: FDot16) -> FDot8 {
+    pub const fn from_fdot16(x: FDot16) -> FDot8 {
         (x + 0x80) >> 8
     }
 }
@@ -98,15 +98,15 @@ pub mod fdot16 {
         i32::saturate_from(x * ONE as f32)
     }
 
-    pub fn floor_to_i32(x: FDot16) -> i32 {
+    pub const fn floor_to_i32(x: FDot16) -> i32 {
         x >> 16
     }
 
-    pub fn ceil_to_i32(x: FDot16) -> i32 {
+    pub const fn ceil_to_i32(x: FDot16) -> i32 {
         (x + ONE - 1) >> 16
     }
 
-    pub fn round_to_i32(x: FDot16) -> i32 {
+    pub const fn round_to_i32(x: FDot16) -> i32 {
         (x + HALF) >> 16
     }
 

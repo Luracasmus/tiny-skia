@@ -39,19 +39,13 @@ pub fn fill_path(
         path.bounds().bottom().ceil(),
     )
     .and_then(|r| r.round_out());
-    let ir = match ir {
-        Some(v) => v,
-        None => return,
-    };
+    let Some(ir) = ir else { return };
 
     // TODO: remove
     // If the intersection of the path bounds and the clip bounds
     // will overflow 32767 when << by SHIFT, we can't supersample,
     // so draw without antialiasing.
-    let clipped_ir = match ir.intersect(&clip.to_int_rect()) {
-        Some(v) => v,
-        None => return,
-    };
+    let Some(clipped_ir) = ir.intersect(&clip.to_int_rect()) else { return };
     if rect_overflows_short_shift(&clipped_ir, SHIFT as i32) != 0 {
         super::path::fill_path(path, fill_rule, clip, blitter);
         return;
@@ -70,7 +64,7 @@ pub fn fill_path(
     // TODO: SkScanClipper
     // TODO: AAA
 
-    fill_path_impl(path, fill_rule, &ir, clip, blitter)
+    fill_path_impl(path, fill_rule, &ir, clip, blitter);
 }
 
 // Would any of the coordinates of this rectangle not fit in a short,
@@ -89,7 +83,7 @@ fn rect_overflows_short_shift(rect: &IntRect, shift: i32) -> i32 {
         | overflows_short_shift(rect.bottom(), shift)
 }
 
-fn overflows_short_shift(value: i32, shift: i32) -> i32 {
+const fn overflows_short_shift(value: i32, shift: i32) -> i32 {
     let s = 16 + shift;
     (left_shift(value, s) >> s) - value
 }
@@ -104,18 +98,13 @@ fn fill_path_impl(
     // TODO: MaskSuperBlitter
 
     // TODO: 15% slower than skia, find out why
-    let mut blitter = match SuperBlitter::new(bounds, clip, blitter) {
-        Some(v) => v,
-        None => return, // clipped out, nothing else to do
+    let Some(mut blitter) = SuperBlitter::new(bounds, clip, blitter) else {
+        return // clipped out, nothing else to do
     };
 
-    let path_contained_in_clip = if let Some(bounds) = bounds.to_screen_int_rect() {
-        clip.contains(&bounds)
-    } else {
-        // If bounds cannot be converted into ScreenIntRect,
-        // the path is out of clip.
-        false
-    };
+    // If bounds cannot be converted into ScreenIntRect,
+    // the path is out of clip.
+    let path_contained_in_clip = bounds.to_screen_int_rect().map_or(false, |bounds| clip.contains(&bounds));
 
     super::path::fill_path_impl(
         path,
@@ -223,12 +212,11 @@ impl Blitter for SuperBlitter<'_> {
         debug_assert!(iy >= self.base.curr_iy);
 
         // hack, until I figure out why my cubics (I think) go beyond the bounds
-        match x.checked_sub(self.base.super_left) {
-            Some(n) => x = n,
-            None => {
-                width = LengthU32::new(x + width.get()).unwrap();
-                x = 0;
-            }
+        if let Some(n) = x.checked_sub(self.base.super_left) {
+            x = n;
+        } else {
+            width = LengthU32::new(x + width.get()).unwrap();
+            x = 0;
         }
 
         debug_assert!(y as i32 >= self.base.curr_y);
@@ -281,7 +269,7 @@ impl Blitter for SuperBlitter<'_> {
 // to produce a final value in [0, 255] and handles clamping 256->255
 // itself, with the same (alpha - (alpha >> 8)) correction as
 // coverage_to_exact_alpha().
-fn coverage_to_partial_alpha(mut aa: u32) -> AlphaU8 {
+const fn coverage_to_partial_alpha(mut aa: u32) -> AlphaU8 {
     aa <<= 8 - 2 * SHIFT;
     aa as AlphaU8
 }

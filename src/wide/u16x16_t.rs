@@ -58,12 +58,12 @@ macro_rules! impl_aarch64_call {
 
 impl u16x16 {
     #[inline]
-    pub fn splat(n: u16) -> Self {
+    pub const fn splat(n: u16) -> Self {
         Self([n, n, n, n, n, n, n, n, n, n, n, n, n, n, n, n])
     }
 
     #[inline]
-    pub fn as_slice(&self) -> &[u16; 16] {
+    pub const fn as_slice(&self) -> &[u16; 16] {
         &self.0
     }
 
@@ -90,7 +90,7 @@ impl u16x16 {
     }
 
     #[inline]
-    pub fn cmp_le(&self, rhs: &Self) -> Self {
+    pub const fn cmp_le(&self, rhs: &Self) -> Self {
         cfg_if::cfg_if! {
             if #[cfg(all(feature = "simd", target_arch = "aarch64", target_feature = "neon"))] {
                 impl_aarch64_call!(vcleq_u16, self, rhs)
@@ -130,7 +130,7 @@ impl u16x16 {
     }
 }
 
-impl core::ops::Add<u16x16> for u16x16 {
+impl core::ops::Add<Self> for u16x16 {
     type Output = Self;
 
     #[inline]
@@ -145,7 +145,7 @@ impl core::ops::Add<u16x16> for u16x16 {
     }
 }
 
-impl core::ops::Sub<u16x16> for u16x16 {
+impl core::ops::Sub<Self> for u16x16 {
     type Output = Self;
 
     #[inline]
@@ -160,7 +160,7 @@ impl core::ops::Sub<u16x16> for u16x16 {
     }
 }
 
-impl core::ops::Mul<u16x16> for u16x16 {
+impl core::ops::Mul<Self> for u16x16 {
     type Output = Self;
 
     #[inline]
@@ -175,7 +175,7 @@ impl core::ops::Mul<u16x16> for u16x16 {
     }
 }
 
-impl core::ops::Div<u16x16> for u16x16 {
+impl core::ops::Div<Self> for u16x16 {
     type Output = Self;
 
     #[inline]
@@ -184,7 +184,7 @@ impl core::ops::Div<u16x16> for u16x16 {
     }
 }
 
-impl core::ops::BitAnd<u16x16> for u16x16 {
+impl core::ops::BitAnd<Self> for u16x16 {
     type Output = Self;
 
     #[inline]
@@ -199,7 +199,7 @@ impl core::ops::BitAnd<u16x16> for u16x16 {
     }
 }
 
-impl core::ops::BitOr<u16x16> for u16x16 {
+impl core::ops::BitOr<Self> for u16x16 {
     type Output = Self;
 
     #[inline]
@@ -219,7 +219,7 @@ impl core::ops::Not for u16x16 {
 
     #[inline]
     fn not(self) -> Self::Output {
-        u16x16([
+        Self([
             !self.0[0],
             !self.0[1],
             !self.0[2],

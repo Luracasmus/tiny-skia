@@ -35,7 +35,7 @@ pub struct PathBuilder {
 impl PathBuilder {
     /// Creates a new builder.
     pub fn new() -> Self {
-        PathBuilder {
+        Self {
             verbs: Vec::new(),
             points: Vec::new(),
             last_move_to_index: 0,
@@ -53,7 +53,7 @@ impl PathBuilder {
     /// - Cubic - 3
     /// - Close - 0
     pub fn with_capacity(verbs_capacity: usize, points_capacity: usize) -> Self {
-        PathBuilder {
+        Self {
             verbs: Vec::with_capacity(verbs_capacity),
             points: Vec::with_capacity(points_capacity),
             last_move_to_index: 0,
@@ -95,7 +95,7 @@ impl PathBuilder {
     ///
     /// See [`PathBuilder::push_circle`] for details.
     pub fn from_circle(cx: f32, cy: f32, radius: f32) -> Option<Path> {
-        let mut b = PathBuilder::new();
+        let mut b = Self::new();
         b.push_circle(cx, cy, radius);
         b.finish()
     }
@@ -104,7 +104,7 @@ impl PathBuilder {
     ///
     /// See [`PathBuilder::push_oval`] for details.
     pub fn from_oval(oval: Rect) -> Option<Path> {
-        let mut b = PathBuilder::new();
+        let mut b = Self::new();
         b.push_oval(oval);
         b.finish()
     }
@@ -126,10 +126,10 @@ impl PathBuilder {
 
     /// Adds beginning of a contour.
     ///
-    /// Multiple continuous MoveTo segments are not allowed.
-    /// If the previous segment was also MoveTo, it will be overwritten with the current one.
+    /// Multiple continuous `MoveTo` segments are not allowed.
+    /// If the previous segment was also `MoveTo`, it will be overwritten with the current one.
     pub fn move_to(&mut self, x: f32, y: f32) {
-        if let Some(PathVerb::Move) = self.verbs.last() {
+        if self.verbs.last() == Some(&PathVerb::Move) {
             let last_idx = self.points.len() - 1;
             self.points[last_idx] = Point::from_xy(x, y);
         } else {
@@ -143,7 +143,7 @@ impl PathBuilder {
 
     fn inject_move_to_if_needed(&mut self) {
         if self.move_to_required {
-            match self.points.get(self.last_move_to_index).cloned() {
+            match self.points.get(self.last_move_to_index).copied() {
                 Some(p) => self.move_to(p.x, p.y),
                 None => self.move_to(0.0, 0.0),
             }
@@ -152,8 +152,8 @@ impl PathBuilder {
 
     /// Adds a line from the last point.
     ///
-    /// - If `Path` is empty - adds Move(0, 0) first.
-    /// - If `Path` ends with Close - adds Move(last_x, last_y) first.
+    /// - If `Path` is empty - adds `Move(0, 0)` first.
+    /// - If `Path` ends with Close - adds `Move(last_x, last_y)` first.
     pub fn line_to(&mut self, x: f32, y: f32) {
         self.inject_move_to_if_needed();
 
@@ -163,8 +163,8 @@ impl PathBuilder {
 
     /// Adds a quad curve from the last point to `x`, `y`.
     ///
-    /// - If `Path` is empty - adds Move(0, 0) first.
-    /// - If `Path` ends with Close - adds Move(last_x, last_y) first.
+    /// - If `Path` is empty - adds `Move(0, 0)` first.
+    /// - If `Path` ends with Close - adds `Move(last_x, last_y)` first.
     pub fn quad_to(&mut self, x1: f32, y1: f32, x: f32, y: f32) {
         self.inject_move_to_if_needed();
 
@@ -218,8 +218,8 @@ impl PathBuilder {
 
     /// Adds a cubic curve from the last point to `x`, `y`.
     ///
-    /// - If `Path` is empty - adds Move(0, 0) first.
-    /// - If `Path` ends with Close - adds Move(last_x, last_y) first.
+    /// - If `Path` is empty - adds `Move(0, 0)` first.
+    /// - If `Path` ends with Close - adds `Move(last_x, last_y)` first.
     pub fn cubic_to(&mut self, x1: f32, y1: f32, x2: f32, y2: f32, x: f32, y: f32) {
         self.inject_move_to_if_needed();
 
@@ -241,12 +241,12 @@ impl PathBuilder {
     /// Does nothing when `Path` is empty or already closed.
     ///
     /// Open and closed contour will be filled the same way.
-    /// Stroking an open contour will add LineCap at contour's start and end.
-    /// Stroking an closed contour will add LineJoin at contour's start and end.
+    /// Stroking an open contour will add `LineCap` at contour's start and end.
+    /// Stroking an closed contour will add `LineJoin` at contour's start and end.
     pub fn close(&mut self) {
         // don't add a close if it's the first verb or a repeat
         if !self.verbs.is_empty() {
-            if self.verbs.last().cloned() != Some(PathVerb::Close) {
+            if self.verbs.last().copied() != Some(PathVerb::Close) {
                 self.verbs.push(PathVerb::Close);
             }
         }
@@ -256,7 +256,7 @@ impl PathBuilder {
 
     /// Returns the last point if any.
     pub fn last_point(&self) -> Option<Point> {
-        self.points.last().cloned()
+        self.points.last().copied()
     }
 
     pub(crate) fn set_last_point(&mut self, pt: Point) {
@@ -343,7 +343,7 @@ impl PathBuilder {
         self.points.extend_from_slice(&other.points);
     }
 
-    pub(crate) fn push_path_builder(&mut self, other: &PathBuilder) {
+    pub(crate) fn push_path_builder(&mut self, other: &Self) {
         if other.is_empty() {
             return;
         }
@@ -357,7 +357,7 @@ impl PathBuilder {
     }
 
     /// Appends, in a reverse order, the first contour of path ignoring path's last point.
-    pub(crate) fn reverse_path_to(&mut self, other: &PathBuilder) {
+    pub(crate) fn reverse_path_to(&mut self, other: &Self) {
         if other.is_empty() {
             return;
         }

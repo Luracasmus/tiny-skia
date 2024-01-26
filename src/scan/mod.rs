@@ -21,15 +21,11 @@ pub fn fill_rect(rect: &Rect, clip: &ScreenIntRect, blitter: &mut dyn Blitter) {
 }
 
 fn fill_int_rect(rect: &IntRect, clip: &ScreenIntRect, blitter: &mut dyn Blitter) {
-    let rect = match rect.intersect(&clip.to_int_rect()) {
-        Some(v) => v,
-        None => return, // everything was clipped out
+    let Some(rect) = rect.intersect(&clip.to_int_rect()) else {
+        return // everything was clipped out
     };
 
-    let rect = match rect.to_screen_int_rect() {
-        Some(v) => v,
-        None => return,
-    };
+    let Some(rect) = rect.to_screen_int_rect() else { return };
 
     blitter.blit_rect(&rect);
 }

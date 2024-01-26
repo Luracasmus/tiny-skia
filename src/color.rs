@@ -31,7 +31,7 @@ pub struct ColorU8([u8; 4]);
 impl ColorU8 {
     /// Creates a new color.
     pub const fn from_rgba(r: u8, g: u8, b: u8, a: u8) -> Self {
-        ColorU8([r, g, b, a])
+        Self([r, g, b, a])
     }
 
     /// Returns color's red component.
@@ -57,22 +57,22 @@ impl ColorU8 {
     /// Check that color is opaque.
     ///
     /// Alpha == 255
-    pub fn is_opaque(&self) -> bool {
+    pub const fn is_opaque(&self) -> bool {
         self.alpha() == ALPHA_U8_OPAQUE
     }
 
     /// Converts into a premultiplied color.
     pub fn premultiply(&self) -> PremultipliedColorU8 {
         let a = self.alpha();
-        if a != ALPHA_U8_OPAQUE {
+        if a == ALPHA_U8_OPAQUE {
+            PremultipliedColorU8::from_rgba_unchecked(self.red(), self.green(), self.blue(), a)
+        } else {
             PremultipliedColorU8::from_rgba_unchecked(
                 premultiply_u8(self.red(), a),
                 premultiply_u8(self.green(), a),
                 premultiply_u8(self.blue(), a),
                 a,
             )
-        } else {
-            PremultipliedColorU8::from_rgba_unchecked(self.red(), self.green(), self.blue(), a)
         }
     }
 }
@@ -101,14 +101,14 @@ unsafe impl bytemuck::Pod for PremultipliedColorU8 {}
 
 impl PremultipliedColorU8 {
     /// A transparent color.
-    pub const TRANSPARENT: Self = PremultipliedColorU8::from_rgba_unchecked(0, 0, 0, 0);
+    pub const TRANSPARENT: Self = Self::from_rgba_unchecked(0, 0, 0, 0);
 
     /// Creates a new premultiplied color.
     ///
     /// RGB components must be <= alpha.
-    pub fn from_rgba(r: u8, g: u8, b: u8, a: u8) -> Option<Self> {
+    pub const fn from_rgba(r: u8, g: u8, b: u8, a: u8) -> Option<Self> {
         if r <= a && g <= a && b <= a {
-            Some(PremultipliedColorU8([r, g, b, a]))
+            Some(Self([r, g, b, a]))
         } else {
             None
         }
@@ -116,7 +116,7 @@ impl PremultipliedColorU8 {
 
     /// Creates a new color.
     pub(crate) const fn from_rgba_unchecked(r: u8, g: u8, b: u8, a: u8) -> Self {
-        PremultipliedColorU8([r, g, b, a])
+        Self([r, g, b, a])
     }
 
     /// Returns color's red component.
@@ -148,7 +148,7 @@ impl PremultipliedColorU8 {
     /// Check that color is opaque.
     ///
     /// Alpha == 255
-    pub fn is_opaque(&self) -> bool {
+    pub const fn is_opaque(&self) -> bool {
         self.alpha() == ALPHA_U8_OPAQUE
     }
 
@@ -198,21 +198,21 @@ const NV_ONE: NormalizedF32 = NormalizedF32::ONE;
 
 impl Color {
     /// A transparent color.
-    pub const TRANSPARENT: Color = Color {
+    pub const TRANSPARENT: Self = Self {
         r: NV_ZERO,
         g: NV_ZERO,
         b: NV_ZERO,
         a: NV_ZERO,
     };
     /// A black color.
-    pub const BLACK: Color = Color {
+    pub const BLACK: Self = Self {
         r: NV_ZERO,
         g: NV_ZERO,
         b: NV_ZERO,
         a: NV_ONE,
     };
     /// A white color.
-    pub const WHITE: Color = Color {
+    pub const WHITE: Self = Self {
         r: NV_ONE,
         g: NV_ONE,
         b: NV_ONE,
@@ -223,7 +223,7 @@ impl Color {
     ///
     /// All values must be in 0..=1 range.
     pub fn from_rgba(r: f32, g: f32, b: f32, a: f32) -> Option<Self> {
-        Some(Color {
+        Some(Self {
             r: NormalizedF32::new(r)?,
             g: NormalizedF32::new(g)?,
             b: NormalizedF32::new(b)?,
@@ -235,7 +235,7 @@ impl Color {
     ///
     /// u8 will be divided by 255 to get the float component.
     pub fn from_rgba8(r: u8, g: u8, b: u8, a: u8) -> Self {
-        Color {
+        Self {
             r: NormalizedF32::new_u8(r),
             g: NormalizedF32::new_u8(g),
             b: NormalizedF32::new_u8(b),
@@ -246,28 +246,28 @@ impl Color {
     /// Returns color's red component.
     ///
     /// The value is guarantee to be in a 0..=1 range.
-    pub fn red(&self) -> f32 {
+    pub const fn red(&self) -> f32 {
         self.r.get()
     }
 
     /// Returns color's green component.
     ///
     /// The value is guarantee to be in a 0..=1 range.
-    pub fn green(&self) -> f32 {
+    pub const fn green(&self) -> f32 {
         self.g.get()
     }
 
     /// Returns color's blue component.
     ///
     /// The value is guarantee to be in a 0..=1 range.
-    pub fn blue(&self) -> f32 {
+    pub const fn blue(&self) -> f32 {
         self.b.get()
     }
 
     /// Returns color's alpha component.
     ///
     /// The value is guarantee to be in a 0..=1 range.
-    pub fn alpha(&self) -> f32 {
+    pub const fn alpha(&self) -> f32 {
         self.a.get()
     }
 
@@ -361,7 +361,7 @@ impl PremultipliedColor {
     ///
     /// - The value is guarantee to be in a 0..=1 range.
     /// - The value is <= alpha.
-    pub fn red(&self) -> f32 {
+    pub const fn red(&self) -> f32 {
         self.r.get()
     }
 
@@ -369,7 +369,7 @@ impl PremultipliedColor {
     ///
     /// - The value is guarantee to be in a 0..=1 range.
     /// - The value is <= alpha.
-    pub fn green(&self) -> f32 {
+    pub const fn green(&self) -> f32 {
         self.g.get()
     }
 
@@ -377,14 +377,14 @@ impl PremultipliedColor {
     ///
     /// - The value is guarantee to be in a 0..=1 range.
     /// - The value is <= alpha.
-    pub fn blue(&self) -> f32 {
+    pub const fn blue(&self) -> f32 {
         self.b.get()
     }
 
     /// Returns color's alpha component.
     ///
     /// - The value is guarantee to be in a 0..=1 range.
-    pub fn alpha(&self) -> f32 {
+    pub const fn alpha(&self) -> f32 {
         self.a.get()
     }
 

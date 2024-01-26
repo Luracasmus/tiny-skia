@@ -11,7 +11,7 @@ pub const SCALAR_MAX: f32 = 3.402823466e+38;
 #[allow(missing_docs)]
 pub const SCALAR_NEARLY_ZERO: f32 = 1.0 / (1 << 12) as f32;
 #[allow(missing_docs)]
-pub const SCALAR_ROOT_2_OVER_2: f32 = 0.707106781;
+pub const SCALAR_ROOT_2_OVER_2: f32 = 0.707_106_781;
 
 /// Float number extension methods.
 ///
@@ -30,24 +30,25 @@ pub trait Scalar {
 }
 
 impl Scalar for f32 {
-    fn half(self) -> f32 {
+    fn half(self) -> Self {
         self * 0.5
     }
 
-    fn ave(self, other: Self) -> f32 {
+    fn ave(self, other: Self) -> Self {
         (self + other) * 0.5
     }
 
-    fn sqr(self) -> f32 {
+    fn sqr(self) -> Self {
         self * self
     }
 
-    fn invert(self) -> f32 {
+    fn invert(self) -> Self {
         1.0 / self
     }
 
     // Works just like SkTPin, returning `max` for NaN/inf
     /// A non-panicking clamp.
+    #[allow(clippy::manual_clamp)]
     fn bound(self, min: Self, max: Self) -> Self {
         max.min(self).max(min)
     }

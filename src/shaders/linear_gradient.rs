@@ -82,12 +82,12 @@ impl LinearGradient {
         transform.invert()?;
 
         let unit_ts = points_to_unit_ts(start, end)?;
-        Some(Shader::LinearGradient(LinearGradient {
+        Some(Shader::LinearGradient(Self {
             base: Gradient::new(stops, mode, transform, unit_ts),
         }))
     }
 
-    pub(crate) fn is_opaque(&self) -> bool {
+    pub(crate) const fn is_opaque(&self) -> bool {
         self.base.colors_are_opaque
     }
 
@@ -99,7 +99,7 @@ impl LinearGradient {
 fn points_to_unit_ts(start: Point, end: Point) -> Option<Transform> {
     let mut vec = end - start;
     let mag = vec.length();
-    let inv = if mag != 0.0 { mag.invert() } else { 0.0 };
+    let inv = if mag == 0.0 { 0.0 } else { mag.invert() };
 
     vec.scale(inv);
 

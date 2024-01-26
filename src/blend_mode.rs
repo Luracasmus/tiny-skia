@@ -1,7 +1,7 @@
 use crate::pipeline;
 
 /// A blending mode.
-#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Default)]
 pub enum BlendMode {
     /// Replaces destination with zero: fully transparent.
     Clear,
@@ -10,6 +10,7 @@ pub enum BlendMode {
     /// Preserves destination.
     Destination,
     /// Source over destination.
+    #[default]
     SourceOver,
     /// Destination over source.
     DestinationOver,
@@ -63,14 +64,8 @@ pub enum BlendMode {
     Luminosity,
 }
 
-impl Default for BlendMode {
-    fn default() -> Self {
-        BlendMode::SourceOver
-    }
-}
-
 impl BlendMode {
-    pub(crate) fn should_pre_scale_coverage(self) -> bool {
+    pub(crate) const fn should_pre_scale_coverage(self) -> bool {
         // The most important things we do here are:
         //   1) never pre-scale with rgb coverage if the blend mode involves a source-alpha term;
         //   2) always pre-scale Plus.
@@ -86,47 +81,47 @@ impl BlendMode {
         // This function is a finer-grained breakdown of SkBlendMode_SupportsCoverageAsAlpha().
         matches!(
             self,
-            BlendMode::Destination |        // d              --> no sa term, ok!
-            BlendMode::DestinationOver |    // d + s*inv(da)  --> no sa term, ok!
-            BlendMode::Plus |               // clamp(s+d)     --> no sa term, ok!
-            BlendMode::DestinationOut |     // d * inv(sa)
-            BlendMode::SourceAtop |         // s*da + d*inv(sa)
-            BlendMode::SourceOver |         // s + d*inv(sa)
-            BlendMode::Xor // s*inv(da) + d*inv(sa)
+            Self::Destination |        // d              --> no sa term, ok!
+            Self::DestinationOver |    // d + s*inv(da)  --> no sa term, ok!
+            Self::Plus |               // clamp(s+d)     --> no sa term, ok!
+            Self::DestinationOut |     // d * inv(sa)
+            Self::SourceAtop |         // s*da + d*inv(sa)
+            Self::SourceOver |         // s + d*inv(sa)
+            Self::Xor // s*inv(da) + d*inv(sa)
         )
     }
 
-    pub(crate) fn to_stage(self) -> Option<pipeline::Stage> {
+    pub(crate) const fn to_stage(self) -> Option<pipeline::Stage> {
         match self {
-            BlendMode::Clear => Some(pipeline::Stage::Clear),
-            BlendMode::Source => None, // This stage is a no-op.
-            BlendMode::Destination => Some(pipeline::Stage::MoveDestinationToSource),
-            BlendMode::SourceOver => Some(pipeline::Stage::SourceOver),
-            BlendMode::DestinationOver => Some(pipeline::Stage::DestinationOver),
-            BlendMode::SourceIn => Some(pipeline::Stage::SourceIn),
-            BlendMode::DestinationIn => Some(pipeline::Stage::DestinationIn),
-            BlendMode::SourceOut => Some(pipeline::Stage::SourceOut),
-            BlendMode::DestinationOut => Some(pipeline::Stage::DestinationOut),
-            BlendMode::SourceAtop => Some(pipeline::Stage::SourceAtop),
-            BlendMode::DestinationAtop => Some(pipeline::Stage::DestinationAtop),
-            BlendMode::Xor => Some(pipeline::Stage::Xor),
-            BlendMode::Plus => Some(pipeline::Stage::Plus),
-            BlendMode::Modulate => Some(pipeline::Stage::Modulate),
-            BlendMode::Screen => Some(pipeline::Stage::Screen),
-            BlendMode::Overlay => Some(pipeline::Stage::Overlay),
-            BlendMode::Darken => Some(pipeline::Stage::Darken),
-            BlendMode::Lighten => Some(pipeline::Stage::Lighten),
-            BlendMode::ColorDodge => Some(pipeline::Stage::ColorDodge),
-            BlendMode::ColorBurn => Some(pipeline::Stage::ColorBurn),
-            BlendMode::HardLight => Some(pipeline::Stage::HardLight),
-            BlendMode::SoftLight => Some(pipeline::Stage::SoftLight),
-            BlendMode::Difference => Some(pipeline::Stage::Difference),
-            BlendMode::Exclusion => Some(pipeline::Stage::Exclusion),
-            BlendMode::Multiply => Some(pipeline::Stage::Multiply),
-            BlendMode::Hue => Some(pipeline::Stage::Hue),
-            BlendMode::Saturation => Some(pipeline::Stage::Saturation),
-            BlendMode::Color => Some(pipeline::Stage::Color),
-            BlendMode::Luminosity => Some(pipeline::Stage::Luminosity),
+            Self::Clear => Some(pipeline::Stage::Clear),
+            Self::Source => None, // This stage is a no-op.
+            Self::Destination => Some(pipeline::Stage::MoveDestinationToSource),
+            Self::SourceOver => Some(pipeline::Stage::SourceOver),
+            Self::DestinationOver => Some(pipeline::Stage::DestinationOver),
+            Self::SourceIn => Some(pipeline::Stage::SourceIn),
+            Self::DestinationIn => Some(pipeline::Stage::DestinationIn),
+            Self::SourceOut => Some(pipeline::Stage::SourceOut),
+            Self::DestinationOut => Some(pipeline::Stage::DestinationOut),
+            Self::SourceAtop => Some(pipeline::Stage::SourceAtop),
+            Self::DestinationAtop => Some(pipeline::Stage::DestinationAtop),
+            Self::Xor => Some(pipeline::Stage::Xor),
+            Self::Plus => Some(pipeline::Stage::Plus),
+            Self::Modulate => Some(pipeline::Stage::Modulate),
+            Self::Screen => Some(pipeline::Stage::Screen),
+            Self::Overlay => Some(pipeline::Stage::Overlay),
+            Self::Darken => Some(pipeline::Stage::Darken),
+            Self::Lighten => Some(pipeline::Stage::Lighten),
+            Self::ColorDodge => Some(pipeline::Stage::ColorDodge),
+            Self::ColorBurn => Some(pipeline::Stage::ColorBurn),
+            Self::HardLight => Some(pipeline::Stage::HardLight),
+            Self::SoftLight => Some(pipeline::Stage::SoftLight),
+            Self::Difference => Some(pipeline::Stage::Difference),
+            Self::Exclusion => Some(pipeline::Stage::Exclusion),
+            Self::Multiply => Some(pipeline::Stage::Multiply),
+            Self::Hue => Some(pipeline::Stage::Hue),
+            Self::Saturation => Some(pipeline::Stage::Saturation),
+            Self::Color => Some(pipeline::Stage::Color),
+            Self::Luminosity => Some(pipeline::Stage::Luminosity),
         }
     }
 }

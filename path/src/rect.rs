@@ -14,8 +14,8 @@ use crate::NoStdFloat;
 ///
 /// # Guarantees
 ///
-/// - Width and height are in 1..=i32::MAX range.
-/// - x+width and y+height does not overflow.
+/// - Width and height are in `1..=i32::MAX` range.
+/// - `x+width` and `y+height` do not overflow.
 #[allow(missing_docs)]
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct IntRect {
@@ -31,7 +31,7 @@ impl IntRect {
         x.checked_add(i32::try_from(width).ok()?)?;
         y.checked_add(i32::try_from(height).ok()?)?;
 
-        Some(IntRect {
+        Some(Self {
             x,
             y,
             width: LengthU32::new(width)?,
@@ -47,54 +47,54 @@ impl IntRect {
     }
 
     /// Returns rect's X position.
-    pub fn x(&self) -> i32 {
+    pub const fn x(&self) -> i32 {
         self.x
     }
 
     /// Returns rect's Y position.
-    pub fn y(&self) -> i32 {
+    pub const fn y(&self) -> i32 {
         self.y
     }
 
     /// Returns rect's width.
-    pub fn width(&self) -> u32 {
+    pub const fn width(&self) -> u32 {
         self.width.get()
     }
 
     /// Returns rect's height.
-    pub fn height(&self) -> u32 {
+    pub const fn height(&self) -> u32 {
         self.height.get()
     }
 
     /// Returns rect's left edge.
-    pub fn left(&self) -> i32 {
+    pub const fn left(&self) -> i32 {
         self.x
     }
 
     /// Returns rect's top edge.
-    pub fn top(&self) -> i32 {
+    pub const fn top(&self) -> i32 {
         self.y
     }
 
     /// Returns rect's right edge.
-    pub fn right(&self) -> i32 {
+    pub const fn right(&self) -> i32 {
         // No overflow is guaranteed by constructors.
         self.x + self.width.get() as i32
     }
 
     /// Returns rect's bottom edge.
-    pub fn bottom(&self) -> i32 {
+    pub const fn bottom(&self) -> i32 {
         // No overflow is guaranteed by constructors.
         self.y + self.height.get() as i32
     }
 
     /// Returns rect's size.
-    pub fn size(&self) -> IntSize {
+    pub const fn size(&self) -> IntSize {
         IntSize::from_wh_safe(self.width, self.height)
     }
 
     /// Checks that the rect is completely includes `other` Rect.
-    pub fn contains(&self, other: &Self) -> bool {
+    pub const fn contains(&self, other: &Self) -> bool {
         self.x <= other.x
             && self.y <= other.y
             && self.right() >= other.right()
@@ -114,12 +114,12 @@ impl IntRect {
         let w = u32::try_from(right.checked_sub(left)?).ok()?;
         let h = u32::try_from(bottom.checked_sub(top)?).ok()?;
 
-        IntRect::from_xywh(left, top, w, h)
+        Self::from_xywh(left, top, w, h)
     }
 
     /// Insets the rectangle.
     pub fn inset(&self, dx: i32, dy: i32) -> Option<Self> {
-        IntRect::from_ltrb(
+        Self::from_ltrb(
             self.left() + dx,
             self.top() + dy,
             self.right() - dx,
@@ -129,7 +129,7 @@ impl IntRect {
 
     /// Outsets the rectangle.
     pub fn make_outset(&self, dx: i32, dy: i32) -> Option<Self> {
-        IntRect::from_ltrb(
+        Self::from_ltrb(
             self.left().saturating_sub(dx),
             self.top().saturating_sub(dy),
             self.right().saturating_add(dx),
@@ -139,12 +139,12 @@ impl IntRect {
 
     /// Translates the rect by the specified offset.
     pub fn translate(&self, tx: i32, ty: i32) -> Option<Self> {
-        IntRect::from_xywh(self.x() + tx, self.y() + ty, self.width(), self.height())
+        Self::from_xywh(self.x() + tx, self.y() + ty, self.width(), self.height())
     }
 
     /// Translates the rect to the specified position.
     pub fn translate_to(&self, x: i32, y: i32) -> Option<Self> {
-        IntRect::from_xywh(x, y, self.width(), self.height())
+        Self::from_xywh(x, y, self.width(), self.height())
     }
 
     /// Converts into `Rect`.
@@ -209,7 +209,7 @@ mod int_rect_tests {
 /// - All values are finite.
 /// - Left edge is <= right.
 /// - Top edge is <= bottom.
-/// - Width and height are <= f32::MAX.
+/// - Width and height are <= `f32::MAX`.
 #[allow(missing_docs)]
 #[derive(Copy, Clone, PartialEq)]
 pub struct Rect {
@@ -243,7 +243,7 @@ impl Rect {
             checked_f32_sub(right.get(), left.get())?;
             checked_f32_sub(bottom.get(), top.get())?;
 
-            Some(Rect {
+            Some(Self {
                 left,
                 top,
                 right,
@@ -256,36 +256,36 @@ impl Rect {
 
     /// Creates new `Rect`.
     pub fn from_xywh(x: f32, y: f32, w: f32, h: f32) -> Option<Self> {
-        Rect::from_ltrb(x, y, w + x, h + y)
+        Self::from_ltrb(x, y, w + x, h + y)
     }
 
     /// Returns the left edge.
-    pub fn left(&self) -> f32 {
+    pub const fn left(&self) -> f32 {
         self.left.get()
     }
 
     /// Returns the top edge.
-    pub fn top(&self) -> f32 {
+    pub const fn top(&self) -> f32 {
         self.top.get()
     }
 
     /// Returns the right edge.
-    pub fn right(&self) -> f32 {
+    pub const fn right(&self) -> f32 {
         self.right.get()
     }
 
     /// Returns the bottom edge.
-    pub fn bottom(&self) -> f32 {
+    pub const fn bottom(&self) -> f32 {
         self.bottom.get()
     }
 
     /// Returns rect's X position.
-    pub fn x(&self) -> f32 {
+    pub const fn x(&self) -> f32 {
         self.left.get()
     }
 
     /// Returns rect's Y position.
-    pub fn y(&self) -> f32 {
+    pub const fn y(&self) -> f32 {
         self.top.get()
     }
 
@@ -335,7 +335,7 @@ impl Rect {
         let right = self.right().min(other.right());
         let bottom = self.bottom().min(other.bottom());
 
-        Rect::from_ltrb(left, top, right, bottom)
+        Self::from_ltrb(left, top, right, bottom)
     }
 
     /// Creates a Rect from Point array.
@@ -380,7 +380,7 @@ impl Rect {
         let min: [f32; 4] = min.0;
         let max: [f32; 4] = max.0;
         if all_finite {
-            Rect::from_ltrb(
+            Self::from_ltrb(
                 min[0].min(min[2]),
                 min[1].min(min[3]),
                 max[0].max(max[2]),
@@ -393,7 +393,7 @@ impl Rect {
 
     /// Insets the rectangle by the specified offset.
     pub fn inset(&self, dx: f32, dy: f32) -> Option<Self> {
-        Rect::from_ltrb(
+        Self::from_ltrb(
             self.left() + dx,
             self.top() + dy,
             self.right() - dx,
@@ -410,13 +410,13 @@ impl Rect {
     ///
     /// This method is expensive.
     pub fn transform(&self, ts: Transform) -> Option<Self> {
-        if !ts.is_identity() {
+        if ts.is_identity() {
+            Some(*self)
+        } else {
             // TODO: remove allocation
             let mut path = PathBuilder::from_rect(*self);
             path = path.transform(ts)?;
             Some(path.bounds())
-        } else {
-            Some(*self)
         }
     }
 
@@ -498,7 +498,7 @@ mod rect_tests {
 /// - All values are finite.
 /// - Left edge is < right.
 /// - Top edge is < bottom.
-/// - Width and height are <= f32::MAX.
+/// - Width and height are <= `f32::MAX`.
 /// - Width and height are > 0.0
 #[allow(missing_docs)]
 #[derive(Copy, Clone, PartialEq)]
@@ -550,32 +550,32 @@ impl NonZeroRect {
     }
 
     /// Returns the left edge.
-    pub fn left(&self) -> f32 {
+    pub const fn left(&self) -> f32 {
         self.left.get()
     }
 
     /// Returns the top edge.
-    pub fn top(&self) -> f32 {
+    pub const fn top(&self) -> f32 {
         self.top.get()
     }
 
     /// Returns the right edge.
-    pub fn right(&self) -> f32 {
+    pub const fn right(&self) -> f32 {
         self.right.get()
     }
 
     /// Returns the bottom edge.
-    pub fn bottom(&self) -> f32 {
+    pub const fn bottom(&self) -> f32 {
         self.bottom.get()
     }
 
     /// Returns rect's X position.
-    pub fn x(&self) -> f32 {
+    pub const fn x(&self) -> f32 {
         self.left.get()
     }
 
     /// Returns rect's Y position.
-    pub fn y(&self) -> f32 {
+    pub const fn y(&self) -> f32 {
         self.top.get()
     }
 
@@ -603,13 +603,13 @@ impl NonZeroRect {
     ///
     /// This method is expensive.
     pub fn transform(&self, ts: Transform) -> Option<Self> {
-        if !ts.is_identity() {
+        if ts.is_identity() {
+            Some(*self)
+        } else {
             // TODO: remove allocation
             let mut path = PathBuilder::from_rect(self.to_rect());
             path = path.transform(ts)?;
             path.bounds().to_non_zero_rect()
-        } else {
-            Some(*self)
         }
     }
 

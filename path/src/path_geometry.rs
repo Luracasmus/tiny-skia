@@ -38,7 +38,7 @@ impl QuadCoeff {
         let b = times_2(p1 - c);
         let a = p2 - times_2(p1) + c;
 
-        QuadCoeff { a, b, c }
+        Self { a, b, c }
     }
 
     pub fn eval(&self, t: f32x2) -> f32x2 {
@@ -62,7 +62,7 @@ impl CubicCoeff {
         let p3 = points[3].to_f32x2();
         let three = f32x2::splat(3.0);
 
-        CubicCoeff {
+        Self {
             a: p3 + three * (p1 - p2) - p0,
             b: three * (p2 - times_2(p1) + p0),
             c: three * (p1 - p0),
@@ -76,7 +76,7 @@ impl CubicCoeff {
 }
 
 // TODO: to a custom type?
-pub fn new_t_values() -> [NormalizedF32Exclusive; 3] {
+pub const fn new_t_values() -> [NormalizedF32Exclusive; 3] {
     [NormalizedF32Exclusive::ANY; 3]
 }
 
@@ -395,7 +395,7 @@ fn sort_array3(array: &mut [NormalizedF32; 3]) {
     }
 }
 
-fn collapse_duplicates3(array: &mut [NormalizedF32; 3]) -> usize {
+fn collapse_duplicates3(array: &[NormalizedF32; 3]) -> usize {
     let mut len = 3;
 
     if array[1] == array[2] {
@@ -584,15 +584,15 @@ pub(crate) struct Conic {
 }
 
 impl Conic {
-    pub fn new(pt0: Point, pt1: Point, pt2: Point, weight: f32) -> Self {
-        Conic {
+    pub const fn new(pt0: Point, pt1: Point, pt2: Point, weight: f32) -> Self {
+        Self {
             points: [pt0, pt1, pt2],
             weight,
         }
     }
 
-    pub fn from_points(points: &[Point], weight: f32) -> Self {
-        Conic {
+    pub const fn from_points(points: &[Point], weight: f32) -> Self {
+        Self {
             points: [points[0], points[1], points[2]],
             weight,
         }
@@ -655,7 +655,7 @@ impl Conic {
         1 << pow2
     }
 
-    fn chop(&self) -> (Conic, Conic) {
+    fn chop(&self) -> (Self, Self) {
         let scale = f32x2::splat((1.0 + self.weight).invert());
         let new_w = subdivide_weight_value(self.weight);
 
@@ -683,11 +683,11 @@ impl Conic {
         }
 
         (
-            Conic {
+            Self {
                 points: [self.points[0], Point::from_f32x2((p0 + wp1) * scale), m_pt],
                 weight: new_w,
             },
-            Conic {
+            Self {
                 points: [m_pt, Point::from_f32x2((wp1 + p2) * scale), self.points[2]],
                 weight: new_w,
             },
@@ -699,8 +699,8 @@ impl Conic {
         u_stop: Point,
         dir: PathDirection,
         user_transform: Transform,
-        dst: &mut [Conic; 5],
-    ) -> Option<&[Conic]> {
+        dst: &mut [Self; 5],
+    ) -> Option<&[Self]> {
         // rotate by x,y so that u_start is (1.0)
         let x = u_start.dot(u_stop);
         let mut y = u_start.cross(u_stop);
@@ -759,7 +759,7 @@ impl Conic {
 
         let mut conic_count = quadrant;
         for i in 0..conic_count {
-            dst[i] = Conic::from_points(&quadrant_points[i * 2..], QUADRANT_WEIGHT);
+            dst[i] = Self::from_points(&quadrant_points[i * 2..], QUADRANT_WEIGHT);
         }
 
         // Now compute any remaing (sub-90-degree) arc for the last conic
@@ -777,7 +777,7 @@ impl Conic {
             let cos_theta_over_2 = ((1.0 + dot) / 2.0).sqrt();
             off_curve.set_length(cos_theta_over_2.invert());
             if !last_q.almost_equal(off_curve) {
-                dst[conic_count] = Conic::new(last_q, off_curve, final_pt, cos_theta_over_2);
+                dst[conic_count] = Self::new(last_q, off_curve, final_pt, cos_theta_over_2);
                 conic_count += 1;
             }
         }
@@ -876,7 +876,7 @@ impl AutoConicToQuads {
         let pow2 = conic.compute_quad_pow2(0.25)?;
         let mut points = [Point::zero(); 64];
         let len = conic.chop_into_quads_pow2(pow2, &mut points);
-        Some(AutoConicToQuads { points, len })
+        Some(Self { points, len })
     }
 }
 

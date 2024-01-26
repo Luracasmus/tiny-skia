@@ -61,17 +61,15 @@ pub fn clip<'a>(
     // temp storage for up to 3 segments
     let mut result_storage = [Point::zero(); MAX_POINTS];
     let mut line_count = 1;
-    let mut reverse;
-
-    if src[0].x < src[1].x {
+    let mut reverse = if src[0].x < src[1].x {
         index0 = 0;
         index1 = 1;
-        reverse = false;
+        false
     } else {
         index0 = 1;
         index1 = 0;
-        reverse = true;
-    }
+        true
+    };
 
     let result: &[Point] = if tmp[index1].x <= clip.left() {
         // wholly to the left
@@ -136,7 +134,7 @@ pub fn clip<'a>(
         points[0..len].copy_from_slice(&result[0..len]);
     }
 
-    &points[0..line_count + 1]
+    &points[0..=line_count]
 }
 
 /// Returns X coordinate of intersection with horizontal line at Y.
@@ -202,6 +200,7 @@ fn pin_unsorted_f32(value: f32, mut limit0: f32, mut limit1: f32) -> f32 {
     // now the limits are sorted
     debug_assert!(limit0 <= limit1);
 
+    #[allow(clippy::manual_clamp)]
     if value < limit0 {
         limit0
     } else if value > limit1 {
@@ -218,6 +217,7 @@ fn pin_unsorted_f64(value: f64, mut limit0: f64, mut limit1: f64) -> f64 {
     // now the limits are sorted
     debug_assert!(limit0 <= limit1);
 
+    #[allow(clippy::manual_clamp)]
     if value < limit0 {
         limit0
     } else if value > limit1 {

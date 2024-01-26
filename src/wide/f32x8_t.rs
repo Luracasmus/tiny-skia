@@ -43,11 +43,11 @@ impl f32x8 {
     }
 
     pub fn floor(self) -> Self {
-        let roundtrip: f32x8 = cast(self.trunc_int().to_f32x8());
+        let roundtrip: Self = cast(self.trunc_int().to_f32x8());
         roundtrip
             - roundtrip
                 .cmp_gt(self)
-                .blend(f32x8::splat(1.0), f32x8::default())
+                .blend(Self::splat(1.0), Self::default())
     }
 
     pub fn fract(self) -> Self {
@@ -55,7 +55,7 @@ impl f32x8 {
     }
 
     pub fn normalize(self) -> Self {
-        self.max(f32x8::default()).min(f32x8::splat(1.0))
+        self.max(Self::default()).min(Self::splat(1.0))
     }
 
     pub fn to_i32x8_bitcast(self) -> i32x8 {
@@ -138,7 +138,7 @@ impl f32x8 {
     }
 
     pub fn abs(self) -> Self {
-        let non_sign_bits = f32x8::splat(f32::from_bits(i32::MAX as u32));
+        let non_sign_bits = Self::splat(f32::from_bits(i32::MAX as u32));
         self & non_sign_bits
     }
 
@@ -268,7 +268,7 @@ impl core::ops::Add for f32x8 {
 }
 
 impl core::ops::AddAssign for f32x8 {
-    fn add_assign(&mut self, rhs: f32x8) {
+    fn add_assign(&mut self, rhs: Self) {
         *self = *self + rhs;
     }
 }
@@ -302,7 +302,7 @@ impl core::ops::Mul for f32x8 {
 }
 
 impl core::ops::MulAssign for f32x8 {
-    fn mul_assign(&mut self, rhs: f32x8) {
+    fn mul_assign(&mut self, rhs: Self) {
         *self = *self * rhs;
     }
 }

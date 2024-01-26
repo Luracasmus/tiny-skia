@@ -25,18 +25,11 @@ pub fn fill_path(
     clip: &ScreenIntRect,
     blitter: &mut dyn Blitter,
 ) {
-    let ir = match conservative_round_to_int(&path.bounds()) {
-        Some(v) => v,
-        None => return,
-    };
+    let Some(ir) = conservative_round_to_int(&path.bounds()) else { return };
 
-    let path_contained_in_clip = if let Some(bounds) = ir.to_screen_int_rect() {
-        clip.contains(&bounds)
-    } else {
-        // If bounds cannot be converted into ScreenIntRect,
-        // the path is out of clip.
-        false
-    };
+    // If bounds cannot be converted into ScreenIntRect,
+    // the path is out of clip.
+    let path_contained_in_clip = ir.to_screen_int_rect().map_or(false, |bounds| clip.contains(&bounds));
 
     // TODO: SkScanClipper
 
@@ -107,19 +100,15 @@ pub fn fill_path_impl(
     path_contained_in_clip: bool,
     blitter: &mut dyn Blitter,
 ) {
-    let shifted_clip = match ShiftedIntRect::new(clip_rect, shift_edges_up) {
-        Some(v) => v,
-        None => return,
-    };
+    let Some(shifted_clip) = ShiftedIntRect::new(clip_rect, shift_edges_up) else { return };
 
     let clip = if path_contained_in_clip {
         None
     } else {
         Some(&shifted_clip)
     };
-    let mut edges = match BasicEdgeBuilder::build_edges(path, clip, shift_edges_up) {
-        Some(v) => v,
-        None => return, // no edges to render, just return
+    let Some(mut edges) = BasicEdgeBuilder::build_edges(path, clip, shift_edges_up) else {
+        return // no edges to render
     };
 
     edges.sort_by(|a, b| {
@@ -174,14 +163,8 @@ pub fn fill_path_impl(
         stop_y = bottom;
     }
 
-    let start_y = match u32::try_from(start_y) {
-        Ok(v) => v,
-        Err(_) => return,
-    };
-    let stop_y = match u32::try_from(stop_y) {
-        Ok(v) => v,
-        Err(_) => return,
-    };
+    let Ok(start_y) = u32::try_from(start_y) else { return };
+    let Ok(stop_y) = u32::try_from(stop_y) else { return };
 
     // TODO: walk_simple_edges
 
@@ -212,8 +195,8 @@ fn walk_edges(
     };
 
     loop {
-        let mut w = 0i32;
-        let mut left = 0u32;
+        let mut w = 0_i32;
+        let mut left = 0_u32;
         let mut prev_x = edges[0].x;
 
         let mut curr_idx = edges[0].next.unwrap() as usize;
@@ -348,7 +331,7 @@ fn insert_edge_after(curr_idx: usize, after_idx: usize, edges: &mut [Edge]) {
 // insertion, marching forwards from here. The implementation could have started from the left
 // of the prior insertion, and search to the right, or with some additional caching, binary
 // search the starting point. More work could be done to determine optimal new edge insertion.
-fn backward_insert_start(mut prev_idx: usize, x: FDot16, edges: &mut [Edge]) -> usize {
+fn backward_insert_start(mut prev_idx: usize, x: FDot16, edges: &[Edge]) -> usize {
     while let Some(prev) = edges[prev_idx].prev {
         prev_idx = prev as usize;
         if edges[prev_idx].x <= x {

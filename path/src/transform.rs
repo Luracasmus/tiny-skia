@@ -29,7 +29,7 @@ pub struct Transform {
 
 impl Default for Transform {
     fn default() -> Self {
-        Transform {
+        Self {
             sx: 1.0,
             kx: 0.0,
             ky: 0.0,
@@ -43,14 +43,14 @@ impl Default for Transform {
 impl Transform {
     /// Creates an identity transform.
     pub fn identity() -> Self {
-        Transform::default()
+        Self::default()
     }
 
     /// Creates a new `Transform`.
     ///
     /// We are using column-major-column-vector matrix notation, therefore it's ky-kx, not kx-ky.
-    pub fn from_row(sx: f32, ky: f32, kx: f32, sy: f32, tx: f32, ty: f32) -> Self {
-        Transform {
+    pub const fn from_row(sx: f32, ky: f32, kx: f32, sy: f32, tx: f32, ty: f32) -> Self {
+        Self {
             sx,
             ky,
             kx,
@@ -61,18 +61,18 @@ impl Transform {
     }
 
     /// Creates a new translating `Transform`.
-    pub fn from_translate(tx: f32, ty: f32) -> Self {
-        Transform::from_row(1.0, 0.0, 0.0, 1.0, tx, ty)
+    pub const fn from_translate(tx: f32, ty: f32) -> Self {
+        Self::from_row(1.0, 0.0, 0.0, 1.0, tx, ty)
     }
 
     /// Creates a new scaling `Transform`.
-    pub fn from_scale(sx: f32, sy: f32) -> Self {
-        Transform::from_row(sx, 0.0, 0.0, sy, 0.0, 0.0)
+    pub const fn from_scale(sx: f32, sy: f32) -> Self {
+        Self::from_row(sx, 0.0, 0.0, sy, 0.0, 0.0)
     }
 
     /// Creates a new skewing `Transform`.
-    pub fn from_skew(kx: f32, ky: f32) -> Self {
-        Transform::from_row(1.0, ky, kx, 1.0, 0.0, 0.0)
+    pub const fn from_skew(kx: f32, ky: f32) -> Self {
+        Self::from_row(1.0, ky, kx, 1.0, 0.0, 0.0)
     }
 
     /// Creates a new rotating `Transform`.
@@ -84,7 +84,7 @@ impl Transform {
         let b = v.sin();
         let c = -b;
         let d = a;
-        Transform::from_row(a, b, c, d, 0.0, 0.0)
+        Self::from_row(a, b, c, d, 0.0, 0.0)
     }
 
     /// Creates a new rotating `Transform` at the specified position.
@@ -93,7 +93,7 @@ impl Transform {
     pub fn from_rotate_at(angle: f32, tx: f32, ty: f32) -> Self {
         let mut ts = Self::default();
         ts = ts.pre_translate(tx, ty);
-        ts = ts.pre_concat(Transform::from_rotate(angle));
+        ts = ts.pre_concat(Self::from_rotate(angle));
         ts = ts.pre_translate(-tx, -ty);
         ts
     }
@@ -101,7 +101,7 @@ impl Transform {
     /// Converts `Rect` into a bounding box `Transform`.
     #[inline]
     pub fn from_bbox(bbox: NonZeroRect) -> Self {
-        Transform::from_row(bbox.width(), 0.0, 0.0, bbox.height(), bbox.x(), bbox.y())
+        Self::from_row(bbox.width(), 0.0, 0.0, bbox.height(), bbox.x(), bbox.y())
     }
 
     /// Checks that transform is finite.
@@ -127,7 +127,7 @@ impl Transform {
 
     /// Checks that transform is identity.
     pub fn is_identity(&self) -> bool {
-        *self == Transform::default()
+        *self == Self::default()
     }
 
     /// Checks that transform is scale-only.
@@ -175,25 +175,25 @@ impl Transform {
     /// Pre-scales the current transform.
     #[must_use]
     pub fn pre_scale(&self, sx: f32, sy: f32) -> Self {
-        self.pre_concat(Transform::from_scale(sx, sy))
+        self.pre_concat(Self::from_scale(sx, sy))
     }
 
     /// Post-scales the current transform.
     #[must_use]
     pub fn post_scale(&self, sx: f32, sy: f32) -> Self {
-        self.post_concat(Transform::from_scale(sx, sy))
+        self.post_concat(Self::from_scale(sx, sy))
     }
 
     /// Pre-translates the current transform.
     #[must_use]
     pub fn pre_translate(&self, tx: f32, ty: f32) -> Self {
-        self.pre_concat(Transform::from_translate(tx, ty))
+        self.pre_concat(Self::from_translate(tx, ty))
     }
 
     /// Post-translates the current transform.
     #[must_use]
     pub fn post_translate(&self, tx: f32, ty: f32) -> Self {
-        self.post_concat(Transform::from_translate(tx, ty))
+        self.post_concat(Self::from_translate(tx, ty))
     }
 
     /// Pre-rotates the current transform.
@@ -201,7 +201,7 @@ impl Transform {
     /// `angle` in degrees.
     #[must_use]
     pub fn pre_rotate(&self, angle: f32) -> Self {
-        self.pre_concat(Transform::from_rotate(angle))
+        self.pre_concat(Self::from_rotate(angle))
     }
 
     /// Post-rotates the current transform.
@@ -209,7 +209,7 @@ impl Transform {
     /// `angle` in degrees.
     #[must_use]
     pub fn post_rotate(&self, angle: f32) -> Self {
-        self.post_concat(Transform::from_rotate(angle))
+        self.post_concat(Self::from_rotate(angle))
     }
 
     /// Pre-rotates the current transform by the specified position.
@@ -217,7 +217,7 @@ impl Transform {
     /// `angle` in degrees.
     #[must_use]
     pub fn pre_rotate_at(&self, angle: f32, tx: f32, ty: f32) -> Self {
-        self.pre_concat(Transform::from_rotate_at(angle, tx, ty))
+        self.pre_concat(Self::from_rotate_at(angle, tx, ty))
     }
 
     /// Post-rotates the current transform by the specified position.
@@ -225,7 +225,7 @@ impl Transform {
     /// `angle` in degrees.
     #[must_use]
     pub fn post_rotate_at(&self, angle: f32, tx: f32, ty: f32) -> Self {
-        self.post_concat(Transform::from_rotate_at(angle, tx, ty))
+        self.post_concat(Self::from_rotate_at(angle, tx, ty))
     }
 
     /// Pre-concats the current transform.
@@ -241,7 +241,7 @@ impl Transform {
     }
 
     pub(crate) fn from_sin_cos(sin: f32, cos: f32) -> Self {
-        Transform::from_row(cos, sin, -sin, cos, 0.0, 0.0)
+        Self::from_row(cos, sin, -sin, cos, 0.0, 0.0)
     }
 
     /// Transforms a points using the current transform.
@@ -425,63 +425,63 @@ mod tests {
         );
 
         let ts = Transform::identity();
-        assert_eq!(ts.is_identity(), true);
-        assert_eq!(ts.is_scale(), false);
-        assert_eq!(ts.is_skew(), false);
-        assert_eq!(ts.is_translate(), false);
-        assert_eq!(ts.is_scale_translate(), false);
-        assert_eq!(ts.has_scale(), false);
-        assert_eq!(ts.has_skew(), false);
-        assert_eq!(ts.has_translate(), false);
+        assert!( ts.is_identity());
+        assert!(!ts.is_scale());
+        assert!(!ts.is_skew());
+        assert!(!ts.is_translate());
+        assert!(!ts.is_scale_translate());
+        assert!(!ts.has_scale());
+        assert!(!ts.has_skew());
+        assert!(!ts.has_translate());
 
         let ts = Transform::from_scale(2.0, 3.0);
-        assert_eq!(ts.is_identity(), false);
-        assert_eq!(ts.is_scale(), true);
-        assert_eq!(ts.is_skew(), false);
-        assert_eq!(ts.is_translate(), false);
-        assert_eq!(ts.is_scale_translate(), true);
-        assert_eq!(ts.has_scale(), true);
-        assert_eq!(ts.has_skew(), false);
-        assert_eq!(ts.has_translate(), false);
+        assert!(!ts.is_identity());
+        assert!( ts.is_scale());
+        assert!(!ts.is_skew());
+        assert!(!ts.is_translate());
+        assert!( ts.is_scale_translate());
+        assert!( ts.has_scale());
+        assert!(!ts.has_skew());
+        assert!(!ts.has_translate());
 
         let ts = Transform::from_skew(2.0, 3.0);
-        assert_eq!(ts.is_identity(), false);
-        assert_eq!(ts.is_scale(), false);
-        assert_eq!(ts.is_skew(), true);
-        assert_eq!(ts.is_translate(), false);
-        assert_eq!(ts.is_scale_translate(), false);
-        assert_eq!(ts.has_scale(), false);
-        assert_eq!(ts.has_skew(), true);
-        assert_eq!(ts.has_translate(), false);
+        assert!(!ts.is_identity());
+        assert!(!ts.is_scale());
+        assert!( ts.is_skew());
+        assert!(!ts.is_translate());
+        assert!(!ts.is_scale_translate());
+        assert!(!ts.has_scale());
+        assert!( ts.has_skew());
+        assert!(!ts.has_translate());
 
         let ts = Transform::from_translate(2.0, 3.0);
-        assert_eq!(ts.is_identity(), false);
-        assert_eq!(ts.is_scale(), false);
-        assert_eq!(ts.is_skew(), false);
-        assert_eq!(ts.is_translate(), true);
-        assert_eq!(ts.is_scale_translate(), true);
-        assert_eq!(ts.has_scale(), false);
-        assert_eq!(ts.has_skew(), false);
-        assert_eq!(ts.has_translate(), true);
+        assert!(!ts.is_identity());
+        assert!(!ts.is_scale());
+        assert!(!ts.is_skew());
+        assert!( ts.is_translate());
+        assert!( ts.is_scale_translate());
+        assert!(!ts.has_scale());
+        assert!(!ts.has_skew());
+        assert!( ts.has_translate());
 
         let ts = Transform::from_row(1.0, 2.0, 3.0, 4.0, 5.0, 6.0);
-        assert_eq!(ts.is_identity(), false);
-        assert_eq!(ts.is_scale(), false);
-        assert_eq!(ts.is_skew(), false);
-        assert_eq!(ts.is_translate(), false);
-        assert_eq!(ts.is_scale_translate(), false);
-        assert_eq!(ts.has_scale(), true);
-        assert_eq!(ts.has_skew(), true);
-        assert_eq!(ts.has_translate(), true);
+        assert!(!ts.is_identity());
+        assert!(!ts.is_scale());
+        assert!(!ts.is_skew());
+        assert!(!ts.is_translate());
+        assert!(!ts.is_scale_translate());
+        assert!( ts.has_scale());
+        assert!( ts.has_skew());
+        assert!( ts.has_translate());
 
         let ts = Transform::from_scale(1.0, 1.0);
-        assert_eq!(ts.has_scale(), false);
+        assert!(!ts.has_scale());
 
         let ts = Transform::from_skew(0.0, 0.0);
-        assert_eq!(ts.has_skew(), false);
+        assert!(!ts.has_skew());
 
         let ts = Transform::from_translate(0.0, 0.0);
-        assert_eq!(ts.has_translate(), false);
+        assert!(!ts.has_translate());
     }
 
     #[test]

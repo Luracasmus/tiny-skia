@@ -26,7 +26,7 @@ pub trait SaturateCast<T>: Sized {
 impl SaturateCast<f32> for i32 {
     /// Return the closest integer for the given float.
     ///
-    /// Returns MAX_I32_FITS_IN_F32 for NaN.
+    /// Returns `MAX_I32_FITS_IN_F32` for NaN.
     fn saturate_from(mut x: f32) -> Self {
         x = if x < MAX_I32_FITS_IN_F32 {
             x
@@ -38,26 +38,26 @@ impl SaturateCast<f32> for i32 {
         } else {
             MIN_I32_FITS_IN_F32
         };
-        x as i32
+        x as Self
     }
 }
 
 impl SaturateCast<f64> for i32 {
     /// Return the closest integer for the given double.
     ///
-    /// Returns i32::MAX for NaN.
+    /// Returns `i32::MAX` for NaN.
     fn saturate_from(mut x: f64) -> Self {
-        x = if x < i32::MAX as f64 {
+        x = if x < Self::MAX as f64 {
             x
         } else {
-            i32::MAX as f64
+            Self::MAX as f64
         };
-        x = if x > i32::MIN as f64 {
+        x = if x > Self::MIN as f64 {
             x
         } else {
-            i32::MIN as f64
+            Self::MIN as f64
         };
-        x as i32
+        x as Self
     }
 }
 
@@ -87,16 +87,16 @@ impl SaturateRound<f32> for i32 {
 /// to each other or against positive float-bit-constants (like 0). This does
 /// not return the int equivalent of the float, just something cheaper for
 /// compares-only.
-pub(crate) fn f32_as_2s_compliment(x: f32) -> i32 {
+pub fn f32_as_2s_compliment(x: f32) -> i32 {
     sign_bit_to_2s_compliment(bytemuck::cast(x))
 }
 
 /// Convert a sign-bit int (i.e. float interpreted as int) into a 2s compliement
 /// int. This also converts -0 (0x80000000) to 0. Doing this to a float allows
 /// it to be compared using normal C operators (<, <=, etc.)
-fn sign_bit_to_2s_compliment(mut x: i32) -> i32 {
+const fn sign_bit_to_2s_compliment(mut x: i32) -> i32 {
     if x < 0 {
-        x &= 0x7FFFFFFF;
+        x &= 0x7FFF_FFFF;
         x = -x;
     }
 
@@ -113,7 +113,7 @@ impl NormalizedF32Exclusive {
     pub const ANY: Self = Self::HALF;
 
     /// A predefined 0.5 value.
-    pub const HALF: Self = NormalizedF32Exclusive(unsafe { FiniteF32::new_unchecked(0.5) });
+    pub const HALF: Self = Self(unsafe { FiniteF32::new_unchecked(0.5) });
 
     /// Creates a `NormalizedF32Exclusive`.
     pub fn new(n: f32) -> Option<Self> {
@@ -132,16 +132,16 @@ impl NormalizedF32Exclusive {
         let n = n.bound(f32::EPSILON, 1.0 - f32::EPSILON);
         // `n` is guarantee to be finite after clamping.
         debug_assert!(n.is_finite());
-        NormalizedF32Exclusive(unsafe { FiniteF32::new_unchecked(n) })
+        Self(unsafe { FiniteF32::new_unchecked(n) })
     }
 
     /// Returns the value as a primitive type.
-    pub fn get(self) -> f32 {
+    pub const fn get(self) -> f32 {
         self.0.get()
     }
 
     /// Returns the value as a `FiniteF32`.
-    pub fn to_normalized(self) -> NormalizedF32 {
+    pub const fn to_normalized(self) -> NormalizedF32 {
         // NormalizedF32 is (0,1), while NormalizedF32 is [0,1], so it will always fit.
         unsafe { NormalizedF32::new_unchecked(self.0.get()) }
     }
